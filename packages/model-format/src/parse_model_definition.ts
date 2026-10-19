@@ -79,6 +79,14 @@ function find_reference_problems(model_definition: ModelDefinition): string[] {
   if (arms_group_id !== undefined && !group_ids.has(arms_group_id)) {
     problems.push(`hands.arms.group_id "${arms_group_id}" is not a group`);
   }
+  const arm_art = model_definition.hands?.arms?.art;
+  if (arm_art) {
+    const hand_pose_ids = arm_art.hand_poses.map((hand_pose) => hand_pose.id);
+    if (new Set(hand_pose_ids).size !== hand_pose_ids.length) problems.push("hands.arms.art.hand_poses: duplicate id");
+    if (!hand_pose_ids.includes(arm_art.rest_hand_pose_id)) {
+      problems.push(`hands.arms.art.rest_hand_pose_id "${arm_art.rest_hand_pose_id}" is not a hand pose`);
+    }
+  }
 
   for (const expression of model_definition.expressions) {
     for (const parameter_id of Object.keys(expression.parameter_values)) {

@@ -5,6 +5,9 @@ export type SensitivityByGroup = Record<Exclude<TrackingInputGroup, "other">, nu
 /** video: camera image with tracking points; tracking_only: points and outlines, no image; hidden: nothing. */
 export type CameraPreviewMode = "video" | "tracking_only" | "hidden";
 
+/** model_art: the model's painted hand poses when it has them; drawn: every finger follows. */
+export type HandStyle = "model_art" | "drawn";
+
 /** Requested camera mode; the camera may deliver the closest mode it supports. */
 export interface CameraMode {
   width: number;
@@ -34,6 +37,9 @@ export interface TrackingSettings {
   is_hand_depth_enabled: boolean;
   /** How much farther than the face (cm) a hand must be to go behind the head. */
   hand_behind_head_threshold_centimeters: number;
+  /** Point the forearm along the tracked hand, which places the elbow (and its foreshortening). */
+  is_elbow_from_wrist_enabled: boolean;
+  hand_style: HandStyle;
 }
 
 export const CAMERA_RESOLUTION_PRESETS: readonly { width: number; height: number }[] = [
@@ -60,4 +66,6 @@ export const DEFAULT_TRACKING_SETTINGS: TrackingSettings = {
   is_eye_sync_enabled: true,
   is_hand_depth_enabled: true,
   hand_behind_head_threshold_centimeters: 6,
+  is_elbow_from_wrist_enabled: true,
+  hand_style: "drawn",
 };

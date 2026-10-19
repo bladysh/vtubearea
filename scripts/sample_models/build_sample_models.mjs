@@ -66,9 +66,39 @@ const SAMPLE_MODELS = [
       ear_inner: "#FF9EB5",
     },
   },
+  {
+    id: "haru",
+    metadata: {
+      name: "Haru",
+      author: "vTubeArea",
+      license: "PolyForm-Noncommercial-1.0.0 (part of vTubeArea)",
+      description: "Male sample model: ash-white swept hair, amber eyes, zip hoodie, tracked hands with every finger.",
+    },
+    features: { hair_style: "short", bangs_style: "swept", face_style: "defined", eye_style: "narrow", brow_style: "straight", body_style: "zip_hoodie", has_bangs_shadow: true, has_cat_ears: false },
+    palette: {
+      hair_back: ["#A9AEC4", "#5F6480"],
+      bangs: ["#F1F2F7", "#B3B7CA"],
+      accent: "#D1FE17",
+      brow: "#6E7389",
+      iris: ["#FFE29A", "#E4922A", "#7A3A0A"],
+      hoodie: ["#2C3550", "#171C2B"],
+      collar: "#3C4766",
+      strings: "#D1FE17",
+      skin: ["#FFE6D8", "#F0C4B0"],
+      neck: ["#E6BCA9", "#FFE2D2"],
+      lash: "#262231",
+      mouth_line: "#8A4048",
+      mouth_inner: "#5A1E2E",
+      tongue: "#E06C7C",
+      blush: "#F2928A",
+      nose: "#D49A8A",
+      hand_outline: "#D6A08C",
+    },
+  },
 ];
 
-const output_root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "sample-models");
+const project_root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const output_root = join(project_root, "assets", "sample-models");
 
 /** Pretty JSON that keeps short objects on one line, so model files stay readable and short. */
 function format_compact_json(value, indent_level = 0) {
@@ -87,12 +117,17 @@ function format_compact_json(value, indent_level = 0) {
   return `{\n${entries.join(",\n")}\n${closing_indent}}`;
 }
 
-for (const sample_model of SAMPLE_MODELS) {
-  const model_directory = join(output_root, sample_model.id);
+function write_model_definition(model_id, model_definition) {
+  const model_directory = join(output_root, model_id);
   rmSync(model_directory, { recursive: true, force: true });
   mkdirSync(join(model_directory, "textures"), { recursive: true });
-  const model_definition = build_sample_model_definition(sample_model.metadata, sample_model.features, sample_model.palette);
   writeFileSync(join(model_directory, "model.json"), `${format_compact_json(model_definition)}\n`);
+  return model_directory;
+}
+
+for (const sample_model of SAMPLE_MODELS) {
+  const model_definition = build_sample_model_definition(sample_model.metadata, sample_model.features, sample_model.palette);
+  const model_directory = write_model_definition(sample_model.id, model_definition);
   const textures = build_sample_model_textures(sample_model.palette, sample_model.features);
   for (const [file_name, svg_text] of Object.entries(textures)) writeFileSync(join(model_directory, "textures", file_name), svg_text);
   console.log(`${sample_model.id}: ${model_definition.layers.length} layers, ${Object.keys(textures).length} textures`);

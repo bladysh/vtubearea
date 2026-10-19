@@ -1,13 +1,16 @@
-import { Section, SliderField, ToggleField, useTranslate } from "@vtubearea/ui";
+import { Field, SegmentedControl, Section, SliderField, ToggleField, useTranslate } from "@vtubearea/ui";
+import type { HandStyle } from "../domain/tracking_settings";
 import { useTrackingStore } from "../application/tracking_store";
 import { CameraPreview } from "./camera_preview";
 import { HandCharts } from "./tracking_charts";
 
+/** Switches first, then sliders, then the live preview and charts at the bottom. */
 export function HandsTab() {
   const translate = useTranslate();
   const settings = useTrackingStore((state) => state.settings);
   const is_running = useTrackingStore((state) => state.session_status === "running");
   const update_settings = useTrackingStore((state) => state.update_settings);
+  const is_enabled = settings.is_hand_tracking_enabled;
 
   return (
     <>
@@ -15,35 +18,59 @@ export function HandsTab() {
         <ToggleField
           label={translate("tracking.hands")}
           hint={translate("tracking.hands_hint")}
-          is_checked={settings.is_hand_tracking_enabled}
-          on_change={(is_enabled) => void update_settings({ is_hand_tracking_enabled: is_enabled })}
+          is_checked={is_enabled}
+          on_change={(is_hand_tracking_enabled) => void update_settings({ is_hand_tracking_enabled })}
         />
-        {is_running && settings.is_hand_tracking_enabled && settings.camera_preview_mode !== "hidden" && (
-          <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} />
+        {is_enabled && (
+          <>
+            <ToggleField
+              label={translate("tracking.hand_mirror")}
+              hint={translate("tracking.hand_mirror_hint")}
+              is_checked={settings.is_hand_mirrored}
+              on_change={(is_hand_mirrored) => void update_settings({ is_hand_mirrored })}
+            />
+            <ToggleField
+              label={translate("tracking.elbow_from_wrist")}
+              hint={translate("tracking.elbow_from_wrist_hint")}
+              is_checked={settings.is_elbow_from_wrist_enabled}
+              on_change={(is_elbow_from_wrist_enabled) => void update_settings({ is_elbow_from_wrist_enabled })}
+            />
+            <ToggleField
+              label={translate("tracking.hand_depth_enabled")}
+              hint={translate("tracking.hand_depth_hint")}
+              is_checked={settings.is_hand_depth_enabled}
+              on_change={(is_hand_depth_enabled) => void update_settings({ is_hand_depth_enabled })}
+            />
+            <Field
+              label={translate("tracking.hand_style")}
+              hint={translate("tracking.hand_style_hint")}
+              is_stacked
+              control={
+                <SegmentedControl<HandStyle>
+                  label={translate("tracking.hand_style")}
+                  value={settings.hand_style}
+                  options={[
+                    { value: "drawn", label: translate("tracking.hand_style_drawn") },
+                    { value: "model_art", label: translate("tracking.hand_style_model_art") },
+                  ]}
+                  on_change={(hand_style) => void update_settings({ hand_style })}
+                />
+              }
+            />
+          </>
         )}
-        <ToggleField
-          label={translate("tracking.hand_mirror")}
-          hint={translate("tracking.hand_mirror_hint")}
-          is_checked={settings.is_hand_mirrored}
-          on_change={(is_hand_mirrored) => void update_settings({ is_hand_mirrored })}
-        />
-        <SliderField
-          label={translate("tracking.hand_smoothness")}
-          hint={translate("tracking.hand_smoothness_hint")}
-          value={settings.hand_smoothness}
-          minimum={0}
-          maximum={1}
-          format_value={(value) => `${Math.round(value * 100)}%`}
-          on_change={(hand_smoothness) => void update_settings({ hand_smoothness })}
-        />
       </Section>
-      {settings.is_hand_tracking_enabled && (
-        <Section title={translate("tracking.hand_depth")}>
-          <ToggleField
-            label={translate("tracking.hand_depth_enabled")}
-            hint={translate("tracking.hand_depth_hint")}
-            is_checked={settings.is_hand_depth_enabled}
-            on_change={(is_enabled) => void update_settings({ is_hand_depth_enabled: is_enabled })}
+
+      {is_enabled && (
+        <Section title={translate("tracking.response")}>
+          <SliderField
+            label={translate("tracking.hand_smoothness")}
+            hint={translate("tracking.hand_smoothness_hint")}
+            value={settings.hand_smoothness}
+            minimum={0}
+            maximum={1}
+            format_value={(value) => `${Math.round(value * 100)}%`}
+            on_change={(hand_smoothness) => void update_settings({ hand_smoothness })}
           />
           {settings.is_hand_depth_enabled && (
             <SliderField
@@ -59,11 +86,16 @@ export function HandsTab() {
           )}
         </Section>
       )}
-      {settings.is_hand_tracking_enabled && (
+
+      {is_enabled && (
         <Section title={translate("charts.hand_monitor")}>
+          {is_running && settings.camera_preview_mode !== "hidden" && (
+            <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} />
+          )}
           <HandCharts />
         </Section>
       )}
+
       <Section title={translate("tracking.hands_tips")}>
         <p className="vta-field__hint">{translate("tracking.hands_tips_text")}</p>
       </Section>

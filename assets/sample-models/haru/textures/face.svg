@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="420" viewBox="332 270 360 420">
+  <defs><radialGradient id="skin" cx="0.5" cy="0.45" r="0.6"><stop offset="0.7" stop-color="#FFE6D8"/><stop offset="1" stop-color="#F0C4B0"/></radialGradient></defs>
+  <path d="M 512 676 C 472 676 404 630 370 574 C 352 544 344 514 345 490 C 340 390 404 285 512 285 C 620 285 684 390 679 490 C 680 514 672 544 654 574 C 620 630 552 676 512 676 Z" fill="url(#skin)"/>
+</svg>

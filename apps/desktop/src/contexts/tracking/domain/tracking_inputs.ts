@@ -81,6 +81,8 @@ export function tracking_input_behavior(input_name: string): TrackingInputBehavi
 const METERS_TO_CENTIMETERS = 100;
 /** Eyes closer than this are treated as one blink (MediaPipe often closes one eye less); a real wink differs more. */
 const EYE_SYNC_THRESHOLD = 0.25;
+/** Share of "looking down" that MediaPipe adds to the blink value of an open eye. */
+const LOOK_DOWN_BLINK_SHARE = 0.5;
 
 /**
  * Derives VTube Studio style inputs from a frame. Without mirroring the avatar copies
@@ -95,8 +97,12 @@ export function derive_tracking_inputs(face_frame: FaceFrame, is_mirrored: boole
   const [position_x, position_y, position_z] = face_frame.head.position_meters;
   const mirror_sign = is_mirrored ? -1 : 1;
 
-  let user_left_eye_open = 1 - blendshape("eyeBlinkLeft") + 0.5 * blendshape("eyeWideLeft");
-  let user_right_eye_open = 1 - blendshape("eyeBlinkRight") + 0.5 * blendshape("eyeWideRight");
+  // Blendshape names follow ARKit: "Left" is the user's own left eye (on the camera image's right).
+  // Looking down lowers the lids and reads as a half blink, so part of it is taken back out.
+  const blink = (side: "Left" | "Right") =>
+    Math.max(0, blendshape(`eyeBlink${side}`) - LOOK_DOWN_BLINK_SHARE * blendshape(`eyeLookDown${side}`));
+  let user_left_eye_open = 1 - blink("Left") + 0.5 * blendshape("eyeWideLeft");
+  let user_right_eye_open = 1 - blink("Right") + 0.5 * blendshape("eyeWideRight");
   if (is_eye_sync_enabled && Math.abs(user_left_eye_open - user_right_eye_open) < EYE_SYNC_THRESHOLD) {
     user_left_eye_open = user_right_eye_open = (user_left_eye_open + user_right_eye_open) / 2;
   }
@@ -108,10 +114,12 @@ export function derive_tracking_inputs(face_frame: FaceFrame, is_mirrored: boole
   const user_left_brow = (blendshape("browInnerUp") + blendshape("browOuterUpLeft")) / 2 - blendshape("browDownLeft");
   const user_right_brow = (blendshape("browInnerUp") + blendshape("browOuterUpRight")) / 2 - blendshape("browDownRight");
 
-  const [left_eye_open, right_eye_open] = is_mirrored ? [user_right_eye_open, user_left_eye_open] : [user_left_eye_open, user_right_eye_open];
-  const [left_gaze_x, right_gaze_x] = is_mirrored ? [user_right_gaze_x, user_left_gaze_x] : [user_left_gaze_x, user_right_gaze_x];
-  const [left_gaze_y, right_gaze_y] = is_mirrored ? [user_right_gaze_y, user_left_gaze_y] : [user_left_gaze_y, user_right_gaze_y];
-  const [left_brow, right_brow] = is_mirrored ? [user_right_brow, user_left_brow] : [user_left_brow, user_right_brow];
+  // "Left" outputs drive the avatar eye on the viewer's left. Mirrored, that is the user's own left
+  // eye (a reflection keeps sides); unmirrored the camera picture is copied, where it is the right eye.
+  const [left_eye_open, right_eye_open] = is_mirrored ? [user_left_eye_open, user_right_eye_open] : [user_right_eye_open, user_left_eye_open];
+  const [left_gaze_x, right_gaze_x] = is_mirrored ? [user_left_gaze_x, user_right_gaze_x] : [user_right_gaze_x, user_left_gaze_x];
+  const [left_gaze_y, right_gaze_y] = is_mirrored ? [user_left_gaze_y, user_right_gaze_y] : [user_right_gaze_y, user_left_gaze_y];
+  const [left_brow, right_brow] = is_mirrored ? [user_left_brow, user_right_brow] : [user_right_brow, user_left_brow];
 
   const derived_inputs: Record<DerivedTrackingInputName, number> = {
     FaceAngleX: head_angles.yaw * mirror_sign,

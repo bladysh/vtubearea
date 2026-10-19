@@ -122,6 +122,43 @@ elbow is found with two-bone inverse kinematics from `upper_arm_length` and
           "forearm_length": 210, "width": 64, "color": "#2a2d31", "outline_color": "#383e46", "group_id": "body_group" }
 ```
 
+#### Painted arms (`arms.art`)
+
+Painted models bring their own arm art instead of drawn sleeves. Paint the model's RIGHT
+arm (viewer's left) in its rest pose; the left arm is the same art mirrored around the
+middle between the two shoulders. Arms with art are always on screen: without a tracked
+hand they hang as painted, and they ease up to the tracked hand and back down.
+
+```json
+"art": {
+  "upper_arm": { "texture": "textures/upper_arm.png", "rect": { "x": 250, "y": 300, "width": 90, "height": 220 },
+                 "start": [300, 310], "end": [280, 500] },
+  "forearm":   { "texture": "textures/forearm.png", "rect": { ... }, "start": [280, 500], "end": [255, 700] },
+  "hand_poses": [
+    { "id": "rest", "texture": "textures/hand_rest.png", "rect": { ... },
+      "wrist": [255, 700], "index_base": [250, 760], "pinky_base": [270, 755] },
+    { "id": "peace", "texture": "textures/hand_peace.png", "rect": { ... },
+      "wrist": [255, 700], "index_base": [245, 640], "pinky_base": [268, 642],
+      "extended_fingers": [false, true, true, false, false] }
+  ],
+  "rest_hand_pose_id": "rest"
+}
+```
+
+- `upper_arm` turns around `start` (shoulder) so `end` lands on the solved elbow; `forearm`
+  runs from the elbow to the wrist. Bones stretch only along their length, never in width.
+  With art the arm never over-stretches: an out-of-reach hand is pulled back toward the shoulder.
+  `upper_arm_length` and `forearm_length` should match the art (`start` to `end`).
+- Each hand pose is pinned at its `wrist` and turned so `index_base` and `pinky_base` line up
+  with the tracked knuckles; it keeps its painted size and flips when the user shows the
+  other side of the hand. The pose whose `extended_fingers` (thumb, index, middle, ring,
+  pinky) best matches the tracked fingers is shown. The forearm is drawn over the hand, so
+  the sleeve cuff covers the wrist.
+- If no hand pose has `extended_fingers` (or the user picks drawn hands in the app), the tracked hand is drawn from its 21 points instead
+  (`skin_color`, `outline_color`, `outline_width`, `finger_width_ratio`, `hand_scale`), so every
+  finger follows; the painted rest pose is still shown while the arm hangs.
+- `width`, `color` and `outline_color` are ignored when `art` is present.
+
 Models with their own hand art can instead bind layers to the tracking inputs
 `HandLeftFound`, `HandLeftPositionX/Y`, `HandLeftOpen` (and `Right`).
 

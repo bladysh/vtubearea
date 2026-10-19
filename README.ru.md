@@ -92,7 +92,7 @@ pnpm dev               # десктоп-приложение
 
 > **Нужно**: Node 22+, pnpm 10, Rust 1.90+. На macOS — Xcode Command Line Tools, на Windows — WebView2 (есть в Windows 11).
 
-При первом запуске ставятся две тестовые модели, **Lumi** и **Kuro**. Дальше:
+При первом запуске ставятся три тестовые модели: **Lumi**, **Kuro** и **Haru**. Дальше:
 
 1. **Трекинг → Включить**, посмотрите прямо в экран, нажмите **Калибровать**.
 2. **Трекинг → Руки** — включить трекинг рук.
@@ -154,7 +154,7 @@ packages/protocol     FaceFrame                        единый формат
 packages/model-format схема · валидатор · SPEC         формат аватара
 packages/engine-2d    рендер на PixiJS                 параметры на входе, картинка на выходе
 packages/ui           дизайн-система · RU/EN           общие компоненты
-assets/sample-models  Lumi, Kuro                       генерируются из кода
+assets/sample-models  Lumi, Kuro, Haru                 генерируются из кода
 ```
 
 Трекинг — MediaPipe Face и Hand Landmarker локально; все источники идут в один трекинг-хаб, так что

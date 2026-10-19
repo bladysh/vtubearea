@@ -33,3 +33,20 @@ describe("derive_tracking_inputs head angles", () => {
     expect(inputs_for(rotation_about("z", -10), true).FaceAngleZ).toBeCloseTo(-10);
   });
 });
+
+describe("derive_tracking_inputs eyes", () => {
+  const eyes_for = (blendshapes: Record<string, number>, is_mirrored: boolean) => {
+    const face_frame = { ...create_empty_face_frame("desktop-webcam", 0), face_found: true, blendshapes };
+    return derive_tracking_inputs(face_frame, is_mirrored, false);
+  };
+
+  it("a closed own left eye closes the avatar eye on the viewer's left when mirrored, the right one otherwise", () => {
+    expect(eyes_for({ eyeBlinkLeft: 1 }, true)).toMatchObject({ EyeOpenLeft: 0, EyeOpenRight: 1 });
+    expect(eyes_for({ eyeBlinkLeft: 1 }, false)).toMatchObject({ EyeOpenLeft: 1, EyeOpenRight: 0 });
+  });
+
+  it("looking down does not read as a half blink", () => {
+    const looking_down = eyes_for({ eyeBlinkLeft: 0.4, eyeBlinkRight: 0.4, eyeLookDownLeft: 0.8, eyeLookDownRight: 0.8 }, true);
+    expect(looking_down.EyeOpenLeft).toBe(1);
+  });
+});

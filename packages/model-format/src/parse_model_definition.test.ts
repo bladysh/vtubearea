@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse_model_definition } from "./parse_model_definition";
 
-const SAMPLE_MODEL_IDS = ["lumi", "kuro"];
+const SAMPLE_MODEL_IDS = ["lumi", "kuro", "haru"];
 
 function read_sample_model(model_id: string): unknown {
   return JSON.parse(readFileSync(new URL(`../../../assets/sample-models/${model_id}/model.json`, import.meta.url), "utf8"));
@@ -68,6 +68,33 @@ describe("parse_model_definition", () => {
       expect(parse_result.problems.join()).toContain("sorted");
       expect(parse_result.problems.join()).toContain("needs 8 numbers");
     }
+  });
+
+  it("rejects painted arms whose rest pose is missing", () => {
+    const part = { texture: "arm.png", rect: { x: 0, y: 0, width: 10, height: 10 } };
+    const hand_pose = { ...part, id: "open", wrist: [0, 0], index_base: [1, 0], pinky_base: [0, 1] };
+    const model = minimal_model({
+      hands: {
+        skin_color: "#ffffff",
+        outline_color: "#000000",
+        face_anchor: { center: [50, 50], height: 40 },
+        arms: {
+          left_shoulder: [70, 60], right_shoulder: [30, 60], upper_arm_length: 20, forearm_length: 20,
+          width: 5, color: "#000000", outline_color: "#000000",
+          art: {
+            upper_arm: { ...part, start: [0, 0], end: [0, 5] },
+            forearm: { ...part, start: [0, 5], end: [0, 9] },
+            hand_poses: [hand_pose, hand_pose],
+            rest_hand_pose_id: "relaxed",
+          },
+        },
+      },
+    });
+    const parse_result = parse_model_definition(model);
+    expect(parse_result.success ? [] : parse_result.problems).toEqual([
+      "hands.arms.art.hand_poses: duplicate id",
+      'hands.arms.art.rest_hand_pose_id "relaxed" is not a hand pose',
+    ]);
   });
 
   it("rejects parent cycles", () => {

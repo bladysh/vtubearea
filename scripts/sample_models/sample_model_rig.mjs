@@ -1,7 +1,7 @@
 // Shared rig for the sample models: parameters, groups, layers, physics, expressions.
 
-const keyframe = (parameter_value, pose = {}) => ({ parameter_value, ...pose });
-const binding = (parameter_id, ...keyframes) => ({ parameter_id, keyframes });
+export const keyframe = (parameter_value, pose = {}) => ({ parameter_value, ...pose });
+export const binding = (parameter_id, ...keyframes) => ({ parameter_id, keyframes });
 
 function parameter(id, display_name, minimum, maximum, default_value = 0) {
   return { id, display_name, minimum, maximum, default_value };
@@ -21,7 +21,7 @@ function layer(id, rect, draw_order, parent_id, { bindings = [], mask_layer_id, 
   };
 }
 
-function build_parameters() {
+export function build_parameters() {
   const parameters = [
     parameter("ParamAngleX", "Head turn", -30, 30),
     parameter("ParamAngleY", "Head nod", -30, 30),
@@ -149,10 +149,18 @@ function build_layers(features) {
   }
 
   if (features.has_cat_ears) layers.push(layer("cat_ears", [300, 120, 424, 160], 55, "hair_front_group"));
-  layers.push(layer("hair_front", [300, 180, 424, 300], 60, "hair_front_group"));
+  // Tall enough for side locks that reach the cheeks.
+  layers.push(layer("hair_front", [300, 180, 424, 400], 60, "hair_front_group"));
 
   return layers;
 }
+
+export const SAMPLE_EXPRESSIONS = [
+  { id: "happy", display_name: "Happy", parameter_values: { ParamMouthForm: 1, ParamCheek: 1, ParamBrowLY: 0.4, ParamBrowRY: 0.4 }, fade_seconds: 0.25 },
+  { id: "surprised", display_name: "Surprised", parameter_values: { ParamBrowLY: 1, ParamBrowRY: 1, ParamMouthOpenY: 0.6, ParamMouthForm: 0 }, fade_seconds: 0.15 },
+  { id: "sad", display_name: "Sad", parameter_values: { ParamMouthForm: -1, ParamBrowLY: -0.7, ParamBrowRY: -0.7 }, fade_seconds: 0.4 },
+  { id: "wink", display_name: "Wink", parameter_values: { ParamEyeROpen: 0, ParamMouthForm: 1 }, fade_seconds: 0.1 },
+];
 
 export function build_sample_model_definition(metadata, features, palette) {
   return {
@@ -168,12 +176,7 @@ export function build_sample_model_definition(metadata, features, palette) {
       { id: "front_hair_sway", input_parameter_id: "ParamAngleX", output_parameter_id: "ParamHairFront", stiffness: 70, damping: 9, output_scale: 0.08 },
       { id: "back_hair_sway", input_parameter_id: "ParamAngleX", output_parameter_id: "ParamHairBack", stiffness: 40, damping: 6, output_scale: 0.1 },
     ],
-    expressions: [
-      { id: "happy", display_name: "Happy", parameter_values: { ParamMouthForm: 1, ParamCheek: 1, ParamBrowLY: 0.4, ParamBrowRY: 0.4 }, fade_seconds: 0.25 },
-      { id: "surprised", display_name: "Surprised", parameter_values: { ParamBrowLY: 1, ParamBrowRY: 1, ParamMouthOpenY: 0.6, ParamMouthForm: 0 }, fade_seconds: 0.15 },
-      { id: "sad", display_name: "Sad", parameter_values: { ParamMouthForm: -1, ParamBrowLY: -0.7, ParamBrowRY: -0.7 }, fade_seconds: 0.4 },
-      { id: "wink", display_name: "Wink", parameter_values: { ParamEyeROpen: 0, ParamMouthForm: 1 }, fade_seconds: 0.1 },
-    ],
+    expressions: SAMPLE_EXPRESSIONS,
     hands: {
       skin_color: palette.skin[0],
       outline_color: palette.hand_outline,

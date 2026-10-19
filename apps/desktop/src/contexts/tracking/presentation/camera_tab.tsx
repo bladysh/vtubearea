@@ -7,6 +7,7 @@ import { CameraPreview } from "./camera_preview";
 
 const to_resolution_value = (width: number, height: number) => `${width}x${height}`;
 
+/** View options first, camera settings next, the live preview at the bottom. */
 export function CameraTab() {
   const translate = useTranslate();
   const settings = useTrackingStore((state) => state.settings);
@@ -75,27 +76,6 @@ export function CameraTab() {
         />
       </Section>
 
-      <Section>
-        {session_status === "running" && settings.camera_preview_mode !== "hidden" ? (
-          <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} />
-        ) : (
-          <div className="camera-placeholder">
-            <CameraOff size={28} />
-            <span>{translate(session_status === "starting" ? "tracking.starting" : "tracking.camera_off")}</span>
-          </div>
-        )}
-        {error_message && <p className="error-text">{translate("tracking.error", { message: error_message })}</p>}
-        {camera_info && (
-          <p className="vta-field__hint">
-            {translate("tracking.camera_actual", {
-              width: camera_info.actual_width,
-              height: camera_info.actual_height,
-              frame_rate: Math.round(camera_info.actual_frame_rate ?? 0),
-            })}
-          </p>
-        )}
-      </Section>
-
       <Section title={translate("tracking.camera_settings")}>
         <SelectField
           label={translate("tracking.camera_device")}
@@ -126,6 +106,27 @@ export function CameraTab() {
             value_label={`${camera_info.maximum_width} × ${camera_info.maximum_height} @${Math.round(camera_info.maximum_frame_rate ?? 0)}`}
             control={null}
           />
+        )}
+      </Section>
+
+      <Section>
+        {session_status === "running" && settings.camera_preview_mode !== "hidden" ? (
+          <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} />
+        ) : (
+          <div className="camera-placeholder">
+            <CameraOff size={28} />
+            <span>{translate(session_status === "starting" ? "tracking.starting" : "tracking.camera_off")}</span>
+          </div>
+        )}
+        {error_message && <p className="error-text">{translate("tracking.error", { message: error_message })}</p>}
+        {camera_info && (
+          <p className="vta-field__hint">
+            {translate("tracking.camera_actual", {
+              width: camera_info.actual_width,
+              height: camera_info.actual_height,
+              frame_rate: Math.round(camera_info.actual_frame_rate ?? 0),
+            })}
+          </p>
         )}
       </Section>
     </>

@@ -368,7 +368,7 @@
     {
       "id": "hair_front",
       "texture": "textures/hair_front.svg",
-      "rect": {"x": 300,"y": 180,"width": 424,"height": 300},
+      "rect": {"x": 300,"y": 180,"width": 424,"height": 400},
       "draw_order": 60,
       "parent_id": "hair_front_group"
     }

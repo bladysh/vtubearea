@@ -4,10 +4,12 @@ import { format_hotkey } from "../../../shared/hotkey";
 import { useEffectiveHotkey } from "../../settings/application/settings_store";
 import { useTrackingStore } from "../application/tracking_store";
 import type { SensitivityByGroup } from "../domain/tracking_settings";
+import { CameraPreview } from "./camera_preview";
 import { FaceCharts } from "./tracking_charts";
 
 const SENSITIVITY_GROUPS: readonly (keyof SensitivityByGroup)[] = ["head", "eyes", "mouth", "brows"];
 
+/** Calibration and switches first, sliders next, live charts at the bottom. */
 export function FaceTab() {
   const translate = useTranslate();
   const settings = useTrackingStore((state) => state.settings);
@@ -22,10 +24,6 @@ export function FaceTab() {
 
   return (
     <>
-      <Section title={translate("charts.face_monitor")}>
-        <FaceCharts />
-      </Section>
-
       <Section title={translate("tracking.calibration")}>
         <p className="vta-field__hint">{translate("tracking.calibration_hint", { hotkey: format_hotkey(calibrate_hotkey) })}</p>
         <div className="button-row">
@@ -46,6 +44,12 @@ export function FaceTab() {
       </Section>
 
       <Section title={translate("tracking.response")}>
+        <ToggleField
+          label={translate("tracking.eye_sync")}
+          hint={translate("tracking.eye_sync_hint")}
+          is_checked={settings.is_eye_sync_enabled}
+          on_change={(is_enabled) => void update_settings({ is_eye_sync_enabled: is_enabled })}
+        />
         <SliderField
           label={translate("tracking.smoothness")}
           hint={translate("tracking.smoothness_hint")}
@@ -54,12 +58,6 @@ export function FaceTab() {
           maximum={1}
           format_value={(value) => `${Math.round(value * 100)}%`}
           on_change={(smoothness) => void update_settings({ smoothness })}
-        />
-        <ToggleField
-          label={translate("tracking.eye_sync")}
-          hint={translate("tracking.eye_sync_hint")}
-          is_checked={settings.is_eye_sync_enabled}
-          on_change={(is_enabled) => void update_settings({ is_eye_sync_enabled: is_enabled })}
         />
       </Section>
 
@@ -76,6 +74,13 @@ export function FaceTab() {
             on_change={(value) => set_sensitivity(group, value)}
           />
         ))}
+      </Section>
+
+      <Section title={translate("charts.face_monitor")}>
+        {is_running && settings.camera_preview_mode !== "hidden" && (
+          <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} focus="face" />
+        )}
+        <FaceCharts />
       </Section>
     </>
   );

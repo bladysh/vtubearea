@@ -1,10 +1,11 @@
 import { Application, Assets, Container, Graphics, Matrix, Mesh, MeshGeometry, type Texture } from "pixi.js";
-import type { ModelDefinition, ModelLayer } from "@vtubearea/model-format";
+import type { ModelDefinition, ModelHands, ModelLayer } from "@vtubearea/model-format";
 import { transform_point, type AffineMatrix } from "./affine_matrix";
 import { draw_hand, type HandStyle, type RenderedHand } from "./hand_drawing";
 import type { ParameterValues } from "./binding_evaluation";
 import { create_grid_geometry, type GridGeometryData } from "./mesh_grid";
 import { ModelPoseSolver, type SolvedLayerPose } from "./model_pose_solver";
+import { PaintedArmView } from "./painted_arm";
 
 export interface AvatarRendererOptions {
   host_element: HTMLElement;
@@ -22,6 +23,12 @@ export interface ModelViewTransform {
 
 export type TextureUrlResolver = (relative_texture_path: string) => string;
 
+/** One hand on screen: drawn from tracked points, or painted arm images. */
+interface HandDisplay {
+  container: Container;
+  show(rendered_hand: RenderedHand): void;
+}
+
 interface RenderedLayer {
   layer: ModelLayer;
   grid_geometry: GridGeometryData;
@@ -36,8 +43,7 @@ export class AvatarRenderer {
   private pose_solver: ModelPoseSolver | null = null;
   private model_definition: ModelDefinition | null = null;
   private view_transform: ModelViewTransform = { offset_x: 0, offset_y: 0, zoom: 1 };
-  private hand_graphics: Graphics[] = [];
-  private hand_style: HandStyle | null = null;
+  private hand_displays: HandDisplay[] = [];
   /** Child index where a hand behind the head goes; null = always on top. */
   private behind_head_child_index: number | null = null;
 
@@ -82,12 +88,15 @@ export class AvatarRenderer {
 
   async load_model(model_definition: ModelDefinition, resolve_texture_url: TextureUrlResolver): Promise<void> {
     this.unload_model();
-    const texture_by_layer_id = await load_layer_textures(model_definition.layers, resolve_texture_url);
+    const texture_by_path = await load_textures(
+      [...model_definition.layers.map((layer) => layer.texture), ...painted_arm_texture_paths(model_definition.hands)],
+      resolve_texture_url,
+    );
     const layer_by_id = new Map(model_definition.layers.map((layer) => [layer.id, layer]));
     const sorted_layers = [...model_definition.layers].sort((first, second) => first.draw_order - second.draw_order);
 
     for (const layer of sorted_layers) {
-      const visible_mesh = create_layer_mesh(layer, texture_by_layer_id.get(layer.id)!);
+      const visible_mesh = create_layer_mesh(layer, texture_by_path.get(layer.texture)!);
       this.model_container.addChild(visible_mesh.mesh);
       this.rendered_layers.push({
         layer,
@@ -103,7 +112,7 @@ export class AvatarRenderer {
         ? layer_by_id.get(rendered_layer.layer.mask_layer_id)
         : undefined;
       if (!mask_layer) continue;
-      const mask_mesh = create_layer_mesh(mask_layer, texture_by_layer_id.get(mask_layer.id)!);
+      const mask_mesh = create_layer_mesh(mask_layer, texture_by_path.get(mask_layer.texture)!);
       this.model_container.addChild(mask_mesh.mesh);
       rendered_layer.meshes[0]!.mask = mask_mesh.mesh;
       this.rendered_layers.push({
@@ -115,9 +124,8 @@ export class AvatarRenderer {
     }
 
     // Tracked hands are drawn above every model layer.
-    this.hand_style = model_definition.hands ?? null;
-    this.hand_graphics = this.hand_style ? [new Graphics(), new Graphics()] : [];
-    for (const graphics of this.hand_graphics) this.model_container.addChild(graphics);
+    this.hand_displays = model_definition.hands ? [0, 1].map(() => create_hand_display(model_definition.hands!, texture_by_path)) : [];
+    for (const hand_display of this.hand_displays) this.model_container.addChild(hand_display.container);
     const behind_head_draw_order = model_definition.hands?.behind_head_draw_order;
     // Visible layers were added first in draw order, so this count is the insertion index.
     this.behind_head_child_index =
@@ -132,8 +140,7 @@ export class AvatarRenderer {
   unload_model(): void {
     for (const child of this.model_container.removeChildren()) child.destroy();
     this.rendered_layers = [];
-    this.hand_graphics = [];
-    this.hand_style = null;
+    this.hand_displays = [];
     this.behind_head_child_index = null;
     this.pose_solver = null;
     this.model_definition = null;
@@ -147,24 +154,23 @@ export class AvatarRenderer {
 
   /** Up to two hands; missing entries clear the matching hand. No-op for models without hands. */
   apply_hands(rendered_hands: readonly RenderedHand[]): void {
-    if (!this.hand_style) return;
-    this.hand_graphics.forEach((graphics, hand_index) => {
+    this.hand_displays.forEach((hand_display, hand_index) => {
       const rendered_hand = rendered_hands[hand_index] ?? { points: [], opacity: 0 };
-      this.place_hand_graphics(graphics, rendered_hand.is_behind_head === true);
-      draw_hand(graphics, rendered_hand, this.hand_style!);
+      this.place_hand_container(hand_display.container, rendered_hand.is_behind_head === true);
+      hand_display.show(rendered_hand);
     });
   }
 
   /** Moves a hand between "under the head" and "on top" without rebuilding anything. */
-  private place_hand_graphics(graphics: Graphics, is_behind_head: boolean): void {
-    const current_index = this.model_container.getChildIndex(graphics);
+  private place_hand_container(container: Container, is_behind_head: boolean): void {
+    const current_index = this.model_container.getChildIndex(container);
     const top_index = this.model_container.children.length - 1;
     if (is_behind_head && this.behind_head_child_index !== null) {
       // The other hand may sit in the slot already; behind hands share it.
       const target_index = Math.min(this.behind_head_child_index, top_index);
-      if (current_index > target_index + 1 || current_index < target_index) this.model_container.setChildIndex(graphics, target_index);
+      if (current_index > target_index + 1 || current_index < target_index) this.model_container.setChildIndex(container, target_index);
     } else if (current_index < top_index - 1) {
-      this.model_container.setChildIndex(graphics, top_index);
+      this.model_container.setChildIndex(container, top_index);
     }
   }
 
@@ -200,19 +206,34 @@ export class AvatarRenderer {
   }
 }
 
-async function load_layer_textures(
-  layers: readonly ModelLayer[],
-  resolve_texture_url: TextureUrlResolver,
-): Promise<Map<string, Texture>> {
+/** Textures by their model-relative path, each loaded once. */
+async function load_textures(texture_paths: readonly string[], resolve_texture_url: TextureUrlResolver): Promise<Map<string, Texture>> {
   const loaded_textures = await Promise.all(
-    layers.map(async (layer) => {
-      const texture_url = resolve_texture_url(layer.texture);
-      // SVG is rasterized once; 2x keeps it sharp when the model is zoomed in.
-      const texture: Texture = await Assets.load({ src: texture_url, data: { resolution: 2 } });
-      return [layer.id, texture] as const;
+    [...new Set(texture_paths)].map(async (texture_path) => {
+      // SVG is rasterized once; 2x keeps it sharp when the model is zoomed in. Mipmaps stop
+      // detailed painted textures from shimmering when the model is shown small.
+      const texture: Texture = await Assets.load({ src: resolve_texture_url(texture_path), data: { resolution: 2, autoGenerateMipmaps: true } });
+      return [texture_path, texture] as const;
     }),
   );
   return new Map(loaded_textures);
+}
+
+function painted_arm_texture_paths(model_hands: ModelHands | undefined): string[] {
+  const arm_art = model_hands?.arms?.art;
+  if (!arm_art) return [];
+  return [arm_art.upper_arm.texture, arm_art.forearm.texture, ...arm_art.hand_poses.map((hand_pose) => hand_pose.texture)];
+}
+
+function create_hand_display(model_hands: ModelHands, texture_by_path: ReadonlyMap<string, Texture>): HandDisplay {
+  const arms = model_hands.arms;
+  if (arms?.art) {
+    const painted_arm_view = new PaintedArmView(arms.art, texture_by_path, (arms.left_shoulder[0] + arms.right_shoulder[0]) / 2, model_hands);
+    return { container: painted_arm_view.container, show: (rendered_hand) => painted_arm_view.update(rendered_hand) };
+  }
+  const graphics = new Graphics();
+  const hand_style: HandStyle = model_hands;
+  return { container: graphics, show: (rendered_hand) => draw_hand(graphics, rendered_hand, hand_style) };
 }
 
 function create_layer_mesh(layer: ModelLayer, texture: Texture) {

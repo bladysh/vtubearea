@@ -92,7 +92,7 @@ pnpm dev               # the desktop app
 
 > **Needs** Node 22+, pnpm 10, Rust 1.90+. macOS needs the Xcode command line tools, Windows needs WebView2 (built into Windows 11).
 
-The first launch installs two sample avatars, **Lumi** and **Kuro**. Then:
+The first launch installs three sample avatars: **Lumi**, **Kuro** and **Haru**. Then:
 
 1. **Tracking → Start**, look straight at the screen, press **Calibrate**.
 2. **Tracking → Hands** to switch on hand tracking.
@@ -154,7 +154,7 @@ packages/protocol     FaceFrame                        one tracking format for e
 packages/model-format schema · validator · SPEC        the avatar format
 packages/engine-2d    PixiJS renderer                  parameters in, pixels out
 packages/ui           design system · RU/EN            shared components
-assets/sample-models  Lumi, Kuro                       generated from code
+assets/sample-models  Lumi, Kuro, Haru                 generated from code
 ```
 
 Tracking runs MediaPipe Face and Hand Landmarker locally; every source feeds one tracking hub, so a

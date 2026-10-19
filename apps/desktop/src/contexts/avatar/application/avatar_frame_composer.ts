@@ -1,9 +1,10 @@
 import type { RenderedHand } from "@vtubearea/engine-2d";
-import type { ModelDefinition } from "@vtubearea/model-format";
+import type { ModelDefinition, ModelHands } from "@vtubearea/model-format";
 import { ExpressionMixer, type ExpressionPlayback } from "../domain/expression_mixer";
 import { solve_arm } from "../domain/arm_solver";
 import { hand_scale_pivots, place_hand_on_canvas, type FramePoint, type UserFaceAnchor } from "../domain/hand_placement";
 import { AutoBlink, breathing_value } from "../domain/idle_motion";
+import { PaintedArmMotion, type PaintedHandFrame } from "../domain/painted_arm_motion";
 import { ParameterPhysics } from "../domain/parameter_physics";
 import { map_input_value, smooth_toward, type ParameterMapping } from "../domain/parameter_mapping";
 import type { AvatarControlPort, AvatarModelDescription } from "./avatar_control_port";
@@ -17,6 +18,13 @@ export interface IdleMotionConfig {
 export interface IdleMotionSettings {
   is_auto_blink_enabled: boolean;
   is_breathing_enabled: boolean;
+}
+
+export interface ArmOptions {
+  /** Place the elbow along the tracked hand's direction instead of guessing it. */
+  is_elbow_from_wrist_enabled: boolean;
+  /** Draw tracked hands even when the model has painted hand poses. */
+  prefers_drawn_hands: boolean;
 }
 
 export interface TrackingFrameInput {
@@ -36,6 +44,10 @@ function palm_length(points: readonly FramePoint[]): number {
   const wrist = points[0];
   const middle_finger_base = points[9];
   return wrist && middle_finger_base ? Math.hypot(middle_finger_base[0] - wrist[0], middle_finger_base[1] - wrist[1]) : 0;
+}
+
+function distance_between(first_point: readonly [number, number], second_point: readonly [number, number]): number {
+  return Math.hypot(second_point[0] - first_point[0], second_point[1] - first_point[1]);
 }
 
 interface ParameterOverride {
@@ -65,8 +77,10 @@ export class AvatarFrameComposer implements AvatarControlPort {
   private readonly auto_blink: AutoBlink;
   private tracking_weight = 0;
   private hand_opacities: number[] = [0, 0];
+  private painted_arm_motions = [new PaintedArmMotion(), new PaintedArmMotion()];
   private elapsed_seconds = 0;
   private idle_motion_settings: IdleMotionSettings = { is_auto_blink_enabled: true, is_breathing_enabled: true };
+  private arm_options: ArmOptions = { is_elbow_from_wrist_enabled: true, prefers_drawn_hands: true };
 
   constructor(private readonly idle_motion_config: IdleMotionConfig) {
     this.auto_blink = new AutoBlink(
@@ -86,6 +100,7 @@ export class AvatarFrameComposer implements AvatarControlPort {
     this.overrides.clear();
     this.expression_mixer = new ExpressionMixer();
     this.parameter_physics = new ParameterPhysics(model_definition?.physics ?? []);
+    this.painted_arm_motions = [new PaintedArmMotion(), new PaintedArmMotion()];
   }
 
   set_mappings(mappings: ParameterMapping[]): void {
@@ -94,6 +109,10 @@ export class AvatarFrameComposer implements AvatarControlPort {
 
   set_idle_motion_settings(idle_motion_settings: IdleMotionSettings): void {
     this.idle_motion_settings = idle_motion_settings;
+  }
+
+  set_arm_options(arm_options: ArmOptions): void {
+    this.arm_options = arm_options;
   }
 
   compose(tracking_frame: TrackingFrameInput, delta_seconds: number): Readonly<Record<string, number>> {
@@ -135,7 +154,15 @@ export class AvatarFrameComposer implements AvatarControlPort {
     // Only hands seen right now count; a lost hand keeps its last pose but must not pull the other.
     const visible_points = (tracked_hand: TrackedHandInput | null | undefined) => (tracked_hand?.is_present ? tracked_hand.points : null);
     const scale_pivots = hand_scale_pivots(visible_points(tracked_hands[0]), visible_points(tracked_hands[1]), user_face);
-    const rendered_hands = tracked_hands.map((tracked_hand, hand_index) => {
+    const rendered_hands = tracked_hands.map((tracked_hand, hand_index): RenderedHand => {
+      const points = tracked_hand
+        ? place_hand_on_canvas(tracked_hand.points, model_hands, user_face, model_face_center, scale_pivots[hand_index])
+        : [];
+      const shoulder = shoulders[hand_index];
+      if (arms?.art && shoulder) {
+        const tracked_points = tracked_hand?.is_present ? points : null;
+        return this.compose_painted_arm(arms, hand_index, tracked_points, shoulder, move_with_group, delta_seconds, tracked_hand?.is_behind_head ?? false);
+      }
       const target_opacity = tracked_hand?.is_present ? 1 : 0;
       const opacity_step = delta_seconds / HAND_FADE_SECONDS;
       const previous_opacity = this.hand_opacities[hand_index] ?? 0;
@@ -143,13 +170,15 @@ export class AvatarFrameComposer implements AvatarControlPort {
         ? Math.min(target_opacity, previous_opacity + opacity_step)
         : Math.max(target_opacity, previous_opacity - opacity_step);
       this.hand_opacities[hand_index] = opacity;
-      const points = tracked_hand
-        ? place_hand_on_canvas(tracked_hand.points, model_hands, user_face, model_face_center, scale_pivots[hand_index])
-        : [];
-      const shoulder = shoulders[hand_index];
       const wrist = points[0];
+      const middle_finger_base = points[9];
+      // The forearm continues the hand's axis: from the knuckles back through the wrist.
+      const forearm_direction: FramePoint | undefined =
+        this.arm_options.is_elbow_from_wrist_enabled && wrist && middle_finger_base ? [wrist[0] - middle_finger_base[0], wrist[1] - middle_finger_base[1]] : undefined;
       const arm_pose =
-        arms && shoulder && wrist ? solve_arm(shoulder, wrist, arms.upper_arm_length, arms.forearm_length, hand_index === 0 ? 1 : -1) : null;
+        arms && shoulder && wrist
+          ? solve_arm(shoulder, wrist, arms.upper_arm_length, arms.forearm_length, hand_index === 0 ? 1 : -1, forearm_direction)
+          : null;
       return {
         points,
         opacity,
@@ -158,6 +187,52 @@ export class AvatarFrameComposer implements AvatarControlPort {
       };
     });
     return rendered_hands.sort((first_hand, second_hand) => palm_length(first_hand.points) - palm_length(second_hand.points));
+  }
+
+  /** A painted arm is always shown: resting as painted, or reaching for the tracked hand. */
+  private compose_painted_arm(
+    arms: NonNullable<ModelHands["arms"]>,
+    hand_index: number,
+    tracked_points: FramePoint[] | null,
+    shoulder: FramePoint,
+    move_with_group: (group_id: string | undefined, point: FramePoint) => FramePoint,
+    delta_seconds: number,
+    is_behind_head: boolean,
+  ): RenderedHand {
+    const arm_art = arms.art!;
+    // The art is the model's right arm; hand 0 is the model's left, its mirror image.
+    const is_mirrored = hand_index === 0;
+    const mirror_axis_x = (arms.left_shoulder[0] + arms.right_shoulder[0]) / 2;
+    const to_canvas = (point: FramePoint) => move_with_group(arms.group_id, is_mirrored ? [2 * mirror_axis_x - point[0], point[1]] : point);
+    const rest_pose = arm_art.hand_poses.find((hand_pose) => hand_pose.id === arm_art.rest_hand_pose_id)!;
+    const rest_frame: PaintedHandFrame = { wrist: to_canvas(rest_pose.wrist), index_base: to_canvas(rest_pose.index_base), pinky_base: to_canvas(rest_pose.pinky_base) };
+    const arm_step = this.painted_arm_motions[hand_index]!.step(arm_art, tracked_points, rest_frame, delta_seconds, this.arm_options.prefers_drawn_hands);
+
+    const upper_arm_length = distance_between(arm_art.upper_arm.start, arm_art.upper_arm.end);
+    const forearm_length = distance_between(arm_art.forearm.start, arm_art.forearm.end);
+    // Painted sleeves look wrong stretched, so out of reach the whole hand is pulled back toward the shoulder.
+    const { wrist } = arm_step.hand_frame;
+    const reach = distance_between(shoulder, wrist);
+    const maximum_reach = (upper_arm_length + forearm_length) * 0.999;
+    const pull = reach > maximum_reach ? (reach - maximum_reach) / reach : 0;
+    const pull_back = (point: FramePoint): FramePoint => [point[0] - (wrist[0] - shoulder[0]) * pull, point[1] - (wrist[1] - shoulder[1]) * pull];
+    const hand_frame: PaintedHandFrame = {
+      wrist: pull_back(wrist),
+      index_base: pull_back(arm_step.hand_frame.index_base),
+      pinky_base: pull_back(arm_step.hand_frame.pinky_base),
+    };
+    const knuckles_middle: FramePoint = [(hand_frame.index_base[0] + hand_frame.pinky_base[0]) / 2, (hand_frame.index_base[1] + hand_frame.pinky_base[1]) / 2];
+    const forearm_direction: FramePoint | undefined = this.arm_options.is_elbow_from_wrist_enabled
+      ? [hand_frame.wrist[0] - knuckles_middle[0], hand_frame.wrist[1] - knuckles_middle[1]]
+      : undefined;
+    const arm_pose = solve_arm(shoulder, hand_frame.wrist, upper_arm_length, forearm_length, is_mirrored ? 1 : -1, forearm_direction);
+    return {
+      points: arm_step.hand_points.map(pull_back),
+      opacity: 1,
+      is_behind_head: is_behind_head && arm_step.tracked_weight > 0.5,
+      arm: { ...arm_pose, width: arms.width, color: arms.color, outline_color: arms.outline_color },
+      painted_hand: { pose_id: arm_step.pose_id, ...hand_frame, is_mirrored },
+    };
   }
 
   describe_model(): AvatarModelDescription | null {

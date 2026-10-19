@@ -1,0 +1,439 @@
+{
+  "$schema": "../../../packages/model-format/model.schema.json",
+  "format": "vtubearea-model",
+  "format_version": 1,
+  "metadata": {
+    "name": "Haru",
+    "author": "vTubeArea",
+    "license": "PolyForm-Noncommercial-1.0.0 (part of vTubeArea)",
+    "description": "Male sample model: ash-white swept hair, amber eyes, zip hoodie, tracked hands with every finger."
+  },
+  "canvas": {"width": 1024,"height": 1024},
+  "parameters": [
+    {"id": "ParamAngleX", "display_name": "Head turn", "minimum": -30,"maximum": 30,"default_value": 0},
+    {"id": "ParamAngleY", "display_name": "Head nod", "minimum": -30,"maximum": 30,"default_value": 0},
+    {"id": "ParamAngleZ", "display_name": "Head tilt", "minimum": -30,"maximum": 30,"default_value": 0},
+    {"id": "ParamEyeLOpen", "display_name": "Left eye open", "minimum": 0,"maximum": 1,"default_value": 1},
+    {"id": "ParamEyeROpen", "display_name": "Right eye open", "minimum": 0,"maximum": 1,"default_value": 1},
+    {"id": "ParamEyeBallX", "display_name": "Gaze horizontal", "minimum": -1,"maximum": 1,"default_value": 0},
+    {"id": "ParamEyeBallY", "display_name": "Gaze vertical", "minimum": -1,"maximum": 1,"default_value": 0},
+    {"id": "ParamBrowLY", "display_name": "Left brow height", "minimum": -1,"maximum": 1,"default_value": 0},
+    {"id": "ParamBrowRY", "display_name": "Right brow height", "minimum": -1,"maximum": 1,"default_value": 0},
+    {"id": "ParamMouthOpenY", "display_name": "Mouth open", "minimum": 0,"maximum": 1,"default_value": 0},
+    {"id": "ParamMouthForm", "display_name": "Mouth smile", "minimum": -1,"maximum": 1,"default_value": 0},
+    {"id": "ParamCheek", "display_name": "Blush", "minimum": 0,"maximum": 1,"default_value": 0},
+    {"id": "ParamBodyAngleX", "display_name": "Body turn", "minimum": -10,"maximum": 10,"default_value": 0},
+    {"id": "ParamBodyAngleZ", "display_name": "Body tilt", "minimum": -10,"maximum": 10,"default_value": 0},
+    {"id": "ParamBreath", "display_name": "Breathing", "minimum": 0,"maximum": 1,"default_value": 0},
+    {"id": "ParamHairFront", "display_name": "Front hair sway", "minimum": -1,"maximum": 1,"default_value": 0},
+    {"id": "ParamHairBack", "display_name": "Back hair sway", "minimum": -1,"maximum": 1,"default_value": 0}
+  ],
+  "groups": [
+    {
+      "id": "body_group",
+      "pivot": [512,1000],
+      "bindings": [
+        {
+          "parameter_id": "ParamBodyAngleX",
+          "keyframes": [{"parameter_value": -10,"translate": [-14,0]},{"parameter_value": 10,"translate": [14,0]}]
+        },
+        {
+          "parameter_id": "ParamBodyAngleZ",
+          "keyframes": [{"parameter_value": -10,"rotation_degrees": -4},{"parameter_value": 10,"rotation_degrees": 4}]
+        },
+        {
+          "parameter_id": "ParamBreath",
+          "keyframes": [{"parameter_value": 0,"scale": [1,1]},{"parameter_value": 1,"scale": [1.01,1.02]}]
+        }
+      ]
+    },
+    {
+      "id": "head",
+      "parent_id": "body_group",
+      "pivot": [512,690],
+      "bindings": [
+        {
+          "parameter_id": "ParamAngleX",
+          "keyframes": [{"parameter_value": -30,"translate": [-18,0]},{"parameter_value": 30,"translate": [18,0]}]
+        },
+        {
+          "parameter_id": "ParamAngleY",
+          "keyframes": [{"parameter_value": -30,"translate": [0,10]},{"parameter_value": 30,"translate": [0,-10]}]
+        },
+        {
+          "parameter_id": "ParamAngleZ",
+          "keyframes": [{"parameter_value": -30,"rotation_degrees": -15},{"parameter_value": 30,"rotation_degrees": 15}]
+        }
+      ]
+    },
+    {
+      "id": "face_features",
+      "parent_id": "head",
+      "pivot": [512,500],
+      "bindings": [
+        {
+          "parameter_id": "ParamAngleX",
+          "keyframes": [
+            {"parameter_value": -30,"translate": [-30,0],"scale": [0.97,1]},
+            {"parameter_value": 0,"scale": [1,1]},
+            {"parameter_value": 30,"translate": [30,0],"scale": [0.97,1]}
+          ]
+        },
+        {
+          "parameter_id": "ParamAngleY",
+          "keyframes": [{"parameter_value": -30,"translate": [0,18]},{"parameter_value": 30,"translate": [0,-18]}]
+        }
+      ]
+    },
+    {
+      "id": "hair_front_group",
+      "parent_id": "head",
+      "pivot": [512,200],
+      "bindings": [
+        {
+          "parameter_id": "ParamAngleX",
+          "keyframes": [{"parameter_value": -30,"translate": [-40,0]},{"parameter_value": 30,"translate": [40,0]}]
+        },
+        {
+          "parameter_id": "ParamAngleY",
+          "keyframes": [{"parameter_value": -30,"translate": [0,14]},{"parameter_value": 30,"translate": [0,-14]}]
+        },
+        {
+          "parameter_id": "ParamHairFront",
+          "keyframes": [{"parameter_value": -1,"rotation_degrees": -7},{"parameter_value": 1,"rotation_degrees": 7}]
+        }
+      ]
+    },
+    {
+      "id": "eye_left",
+      "parent_id": "face_features",
+      "pivot": [440,500],
+      "bindings": [
+        {
+          "parameter_id": "ParamEyeLOpen",
+          "keyframes": [
+            {"parameter_value": 0,"scale": [1,0.15],"opacity": 0},
+            {"parameter_value": 0.3,"scale": [1,0.55],"opacity": 1},
+            {"parameter_value": 1,"scale": [1,1]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "eye_right",
+      "parent_id": "face_features",
+      "pivot": [584,500],
+      "bindings": [
+        {
+          "parameter_id": "ParamEyeROpen",
+          "keyframes": [
+            {"parameter_value": 0,"scale": [1,0.15],"opacity": 0},
+            {"parameter_value": 0.3,"scale": [1,0.55],"opacity": 1},
+            {"parameter_value": 1,"scale": [1,1]}
+          ]
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "hair_back",
+      "texture": "textures/hair_back.svg",
+      "rect": {"x": 262,"y": 170,"width": 500,"height": 640},
+      "draw_order": 0,
+      "parent_id": "head",
+      "pivot": [512,220],
+      "bindings": [
+        {
+          "parameter_id": "ParamAngleX",
+          "keyframes": [{"parameter_value": -30,"translate": [14,0]},{"parameter_value": 30,"translate": [-14,0]}]
+        },
+        {
+          "parameter_id": "ParamHairBack",
+          "keyframes": [{"parameter_value": -1,"rotation_degrees": -4},{"parameter_value": 1,"rotation_degrees": 4}]
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "texture": "textures/body.svg",
+      "rect": {"x": 232,"y": 620,"width": 560,"height": 404},
+      "draw_order": 10,
+      "parent_id": "body_group"
+    },
+    {
+      "id": "face",
+      "texture": "textures/face.svg",
+      "rect": {"x": 332,"y": 270,"width": 360,"height": 420},
+      "draw_order": 20,
+      "parent_id": "head"
+    },
+    {
+      "id": "blush",
+      "texture": "textures/blush.svg",
+      "rect": {"x": 386,"y": 552,"width": 252,"height": 40},
+      "draw_order": 25,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamCheek",
+          "keyframes": [{"parameter_value": 0,"opacity": 0},{"parameter_value": 1,"opacity": 1}]
+        }
+      ]
+    },
+    {
+      "id": "nose",
+      "texture": "textures/nose.svg",
+      "rect": {"x": 504,"y": 548,"width": 16,"height": 12},
+      "draw_order": 26,
+      "parent_id": "face_features"
+    },
+    {
+      "id": "mouth_open",
+      "texture": "textures/mouth_open.svg",
+      "rect": {"x": 482,"y": 588,"width": 60,"height": 44},
+      "draw_order": 30,
+      "parent_id": "face_features",
+      "pivot": [512,590],
+      "bindings": [
+        {
+          "parameter_id": "ParamMouthOpenY",
+          "keyframes": [
+            {"parameter_value": 0,"scale": [1,0.05],"opacity": 0},
+            {"parameter_value": 0.1,"scale": [1,0.2],"opacity": 1},
+            {"parameter_value": 1,"scale": [1,1]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mouth_frown",
+      "texture": "textures/mouth_frown.svg",
+      "rect": {"x": 472,"y": 580,"width": 80,"height": 28},
+      "draw_order": 31,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamMouthForm",
+          "keyframes": [{"parameter_value": -1,"opacity": 1},{"parameter_value": 0,"opacity": 0}]
+        }
+      ]
+    },
+    {
+      "id": "mouth_neutral",
+      "texture": "textures/mouth_neutral.svg",
+      "rect": {"x": 472,"y": 580,"width": 80,"height": 28},
+      "draw_order": 32,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamMouthForm",
+          "keyframes": [
+            {"parameter_value": -1,"opacity": 0},
+            {"parameter_value": 0,"opacity": 1},
+            {"parameter_value": 1,"opacity": 0}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mouth_smile",
+      "texture": "textures/mouth_smile.svg",
+      "rect": {"x": 472,"y": 580,"width": 80,"height": 28},
+      "draw_order": 33,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamMouthForm",
+          "keyframes": [{"parameter_value": 0,"opacity": 0},{"parameter_value": 1,"opacity": 1}]
+        }
+      ]
+    },
+    {
+      "id": "eye_white_left",
+      "texture": "textures/eye_white_left.svg",
+      "rect": {"x": 398,"y": 468,"width": 84,"height": 64},
+      "draw_order": 40,
+      "parent_id": "eye_left"
+    },
+    {
+      "id": "iris_left",
+      "texture": "textures/iris_left.svg",
+      "rect": {"x": 417,"y": 472,"width": 46,"height": 56},
+      "draw_order": 41,
+      "parent_id": "eye_left",
+      "mask_layer_id": "eye_white_left",
+      "bindings": [
+        {
+          "parameter_id": "ParamEyeBallX",
+          "keyframes": [{"parameter_value": -1,"translate": [-14,0]},{"parameter_value": 1,"translate": [14,0]}]
+        },
+        {
+          "parameter_id": "ParamEyeBallY",
+          "keyframes": [{"parameter_value": -1,"translate": [0,10]},{"parameter_value": 1,"translate": [0,-10]}]
+        }
+      ]
+    },
+    {
+      "id": "lash_left",
+      "texture": "textures/lash_left.svg",
+      "rect": {"x": 390,"y": 456,"width": 100,"height": 32},
+      "draw_order": 42,
+      "parent_id": "eye_left"
+    },
+    {
+      "id": "eye_closed_left",
+      "texture": "textures/eye_closed_left.svg",
+      "rect": {"x": 400,"y": 492,"width": 80,"height": 24},
+      "draw_order": 43,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamEyeLOpen",
+          "keyframes": [{"parameter_value": 0,"opacity": 1},{"parameter_value": 0.3,"opacity": 0}]
+        }
+      ]
+    },
+    {
+      "id": "brow_left",
+      "texture": "textures/brow_left.svg",
+      "rect": {"x": 396,"y": 420,"width": 88,"height": 24},
+      "draw_order": 50,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamBrowLY",
+          "keyframes": [{"parameter_value": -1,"translate": [0,8]},{"parameter_value": 1,"translate": [0,-12]}]
+        }
+      ]
+    },
+    {
+      "id": "eye_white_right",
+      "texture": "textures/eye_white_right.svg",
+      "rect": {"x": 542,"y": 468,"width": 84,"height": 64},
+      "draw_order": 40,
+      "parent_id": "eye_right"
+    },
+    {
+      "id": "iris_right",
+      "texture": "textures/iris_right.svg",
+      "rect": {"x": 561,"y": 472,"width": 46,"height": 56},
+      "draw_order": 41,
+      "parent_id": "eye_right",
+      "mask_layer_id": "eye_white_right",
+      "bindings": [
+        {
+          "parameter_id": "ParamEyeBallX",
+          "keyframes": [{"parameter_value": -1,"translate": [-14,0]},{"parameter_value": 1,"translate": [14,0]}]
+        },
+        {
+          "parameter_id": "ParamEyeBallY",
+          "keyframes": [{"parameter_value": -1,"translate": [0,10]},{"parameter_value": 1,"translate": [0,-10]}]
+        }
+      ]
+    },
+    {
+      "id": "lash_right",
+      "texture": "textures/lash_right.svg",
+      "rect": {"x": 534,"y": 456,"width": 100,"height": 32},
+      "draw_order": 42,
+      "parent_id": "eye_right"
+    },
+    {
+      "id": "eye_closed_right",
+      "texture": "textures/eye_closed_right.svg",
+      "rect": {"x": 544,"y": 492,"width": 80,"height": 24},
+      "draw_order": 43,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamEyeROpen",
+          "keyframes": [{"parameter_value": 0,"opacity": 1},{"parameter_value": 0.3,"opacity": 0}]
+        }
+      ]
+    },
+    {
+      "id": "brow_right",
+      "texture": "textures/brow_right.svg",
+      "rect": {"x": 540,"y": 420,"width": 88,"height": 24},
+      "draw_order": 50,
+      "parent_id": "face_features",
+      "bindings": [
+        {
+          "parameter_id": "ParamBrowRY",
+          "keyframes": [{"parameter_value": -1,"translate": [0,8]},{"parameter_value": 1,"translate": [0,-12]}]
+        }
+      ]
+    },
+    {
+      "id": "hair_front",
+      "texture": "textures/hair_front.svg",
+      "rect": {"x": 300,"y": 180,"width": 424,"height": 400},
+      "draw_order": 60,
+      "parent_id": "hair_front_group"
+    }
+  ],
+  "physics": [
+    {
+      "id": "front_hair_sway",
+      "input_parameter_id": "ParamAngleX",
+      "output_parameter_id": "ParamHairFront",
+      "stiffness": 70,
+      "damping": 9,
+      "output_scale": 0.08
+    },
+    {
+      "id": "back_hair_sway",
+      "input_parameter_id": "ParamAngleX",
+      "output_parameter_id": "ParamHairBack",
+      "stiffness": 40,
+      "damping": 6,
+      "output_scale": 0.1
+    }
+  ],
+  "expressions": [
+    {
+      "id": "happy",
+      "display_name": "Happy",
+      "parameter_values": {"ParamMouthForm": 1,"ParamCheek": 1,"ParamBrowLY": 0.4,"ParamBrowRY": 0.4},
+      "fade_seconds": 0.25
+    },
+    {
+      "id": "surprised",
+      "display_name": "Surprised",
+      "parameter_values": {"ParamBrowLY": 1,"ParamBrowRY": 1,"ParamMouthOpenY": 0.6,"ParamMouthForm": 0},
+      "fade_seconds": 0.15
+    },
+    {
+      "id": "sad",
+      "display_name": "Sad",
+      "parameter_values": {"ParamMouthForm": -1,"ParamBrowLY": -0.7,"ParamBrowRY": -0.7},
+      "fade_seconds": 0.4
+    },
+    {
+      "id": "wink",
+      "display_name": "Wink",
+      "parameter_values": {"ParamEyeROpen": 0,"ParamMouthForm": 1},
+      "fade_seconds": 0.1
+    }
+  ],
+  "hands": {
+    "skin_color": "#FFE6D8",
+    "outline_color": "#D6A08C",
+    "outline_width": 4,
+    "finger_width_ratio": 0.26,
+    "hand_scale": 0.65,
+    "face_anchor": {"center": [512,490],"height": 390,"group_id": "head"},
+    "behind_head_draw_order": 20,
+    "arms": {
+      "left_shoulder": [668,806],
+      "right_shoulder": [356,806],
+      "upper_arm_length": 230,
+      "forearm_length": 210,
+      "width": 62,
+      "color": "#2C3550",
+      "outline_color": "#3C4766",
+      "group_id": "body_group"
+    }
+  }
+}

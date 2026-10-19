@@ -83,6 +83,39 @@ export const model_expression_schema = z.object({
 
 const color_schema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "color like #ffcc99");
 
+/** One painted arm part, placed on the canvas where it sits in the rest pose. */
+const painted_part_schema = z.object({
+  texture: z.string().min(1),
+  rect: model_layer_schema.shape.rect,
+});
+
+/** A bone of the arm: the image is turned and stretched so start..end follows the solved joints. */
+const painted_bone_schema = painted_part_schema.extend({ start: point_schema, end: point_schema });
+
+const painted_hand_pose_schema = painted_part_schema.extend({
+  id: identifier_schema,
+  /** Wrist, index finger base and pinky base in the image: they orient it like the tracked hand. */
+  wrist: point_schema,
+  index_base: point_schema,
+  pinky_base: point_schema,
+  /** Straight fingers (thumb, index, middle, ring, pinky); the closest pose to the tracked hand is shown. Omit for rest-only poses. */
+  extended_fingers: z.tuple([z.boolean(), z.boolean(), z.boolean(), z.boolean(), z.boolean()]).optional(),
+});
+
+/**
+ * Painted arms instead of drawn ones. Art is the model's RIGHT arm (viewer's left) in the rest
+ * pose; the left arm is its mirror image around the middle between the shoulders.
+ */
+const painted_arms_schema = z.object({
+  /** start = shoulder, end = elbow. */
+  upper_arm: painted_bone_schema,
+  /** start = elbow, end = wrist. */
+  forearm: painted_bone_schema,
+  hand_poses: z.array(painted_hand_pose_schema).min(1),
+  /** Pose shown while the hand is not tracked; the arm then hangs as painted. */
+  rest_hand_pose_id: identifier_schema,
+});
+
 /**
  * Hands drawn from live hand tracking (all 21 points, so every finger follows).
  * Hands are placed relative to the face: a hand touching the user's cheek touches the
@@ -125,6 +158,8 @@ export const model_hands_schema = z.object({
       outline_color: color_schema,
       /** Group the shoulders move with (usually the body). */
       group_id: identifier_schema.optional(),
+      /** Painted arms and hand poses; then the arms are always visible and width/colors are unused. */
+      art: painted_arms_schema.optional(),
     })
     .optional(),
 });
@@ -156,3 +191,5 @@ export type BindingKeyframe = z.infer<typeof binding_keyframe_schema>;
 export type PhysicsSpring = z.infer<typeof physics_spring_schema>;
 export type ModelExpression = z.infer<typeof model_expression_schema>;
 export type ModelHands = z.infer<typeof model_hands_schema>;
+export type PaintedArms = z.infer<typeof painted_arms_schema>;
+export type PaintedHandPose = z.infer<typeof painted_hand_pose_schema>;

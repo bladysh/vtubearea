@@ -107,6 +107,30 @@ describe("AvatarFrameComposer", () => {
     expect(rendered_hands[0]?.opacity).toBe(0);
   });
 
+  it("keeps painted arms resting as painted, mirrored for the left arm, when no hand is tracked", () => {
+    const sample_model = load_sample_model();
+    const part = { texture: "arm.png", rect: { x: 0, y: 0, width: 10, height: 10 } };
+    const arms = {
+      ...sample_model.hands!.arms!,
+      left_shoulder: [600, 300] as [number, number],
+      right_shoulder: [400, 300] as [number, number],
+      art: {
+        upper_arm: { ...part, start: [400, 300] as [number, number], end: [380, 400] as [number, number] },
+        forearm: { ...part, start: [380, 400] as [number, number], end: [370, 500] as [number, number] },
+        hand_poses: [{ ...part, id: "rest", wrist: [370, 500] as [number, number], index_base: [365, 540] as [number, number], pinky_base: [380, 540] as [number, number] }],
+        rest_hand_pose_id: "rest",
+      },
+    };
+    const frame_composer = new AvatarFrameComposer({ auto_blink_min_interval_ms: 1, auto_blink_max_interval_ms: 1, breathing_period_ms: 1 });
+    frame_composer.load_model({ ...sample_model, hands: { ...sample_model.hands!, arms } }, []);
+    const keep_point = (_group_id: string | undefined, point: [number, number]) => point;
+    const rendered_hands = frame_composer.compose_hands([null, null], null, keep_point, 1 / 60);
+    const left_arm = rendered_hands.find((rendered_hand) => rendered_hand.painted_hand?.is_mirrored)!;
+    expect(left_arm.opacity).toBe(1);
+    expect(left_arm.painted_hand).toMatchObject({ pose_id: "rest", wrist: [630, 500] });
+    expect(left_arm.arm?.elbow[0]).toBeCloseTo(620, 0);
+  });
+
   it("describes the model for external controllers", () => {
     const model_description = create_composer().describe_model();
     expect(model_description?.name).toBe("Lumi");

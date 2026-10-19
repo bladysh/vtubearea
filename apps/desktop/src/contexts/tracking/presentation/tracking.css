@@ -11,6 +11,12 @@
   transform: scaleX(-1);
 }
 
+.camera-preview[data-focus="face"] {
+  width: min(100%, 260px);
+  margin-inline: auto;
+  aspect-ratio: 1;
+}
+
 .camera-placeholder {
   display: flex;
   flex-direction: column;

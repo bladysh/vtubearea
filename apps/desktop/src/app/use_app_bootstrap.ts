@@ -27,5 +27,14 @@ export function useAppBootstrap(): void {
     return useSettingsStore.subscribe(apply_idle_motion_settings);
   }, []);
 
+  useEffect(() => {
+    const apply_arm_options = () => {
+      const { is_elbow_from_wrist_enabled, hand_style } = useTrackingStore.getState().settings;
+      avatar_frame_composer.set_arm_options({ is_elbow_from_wrist_enabled, prefers_drawn_hands: hand_style === "drawn" });
+    };
+    apply_arm_options();
+    return useTrackingStore.subscribe(apply_arm_options);
+  }, []);
+
   useHotkeyRouter();
 }

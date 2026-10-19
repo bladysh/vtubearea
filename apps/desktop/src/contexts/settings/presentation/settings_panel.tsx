@@ -53,6 +53,12 @@ function GeneralTab() {
         options={LOCALE_OPTIONS}
         on_change={(next_locale) => update_settings({ locale: next_locale })}
       />
+      <ToggleField
+        label={translate("settings.debug_overlay")}
+        hint={translate("settings.debug_overlay_hint")}
+        is_checked={is_debug_overlay_visible}
+        on_change={(is_visible) => update_settings({ is_debug_overlay_visible: is_visible })}
+      />
       <SliderField
         label={translate("settings.max_fps")}
         hint={translate("settings.max_fps_hint")}
@@ -62,12 +68,6 @@ function GeneralTab() {
         step={1}
         format_value={(value) => `${value} FPS`}
         on_change={(value) => update_settings({ max_frames_per_second: value })}
-      />
-      <ToggleField
-        label={translate("settings.debug_overlay")}
-        hint={translate("settings.debug_overlay_hint")}
-        is_checked={is_debug_overlay_visible}
-        on_change={(is_visible) => update_settings({ is_debug_overlay_visible: is_visible })}
       />
     </Section>
   );
