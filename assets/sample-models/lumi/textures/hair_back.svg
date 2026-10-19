@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="640" viewBox="262 170 500 640">
+  <defs><linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5B3FA8"/><stop offset="1" stop-color="#22184A"/></linearGradient></defs>
+  <path d="M 512 175 C 330 175 262 330 270 520 C 276 650 262 760 300 806 L 724 806 C 762 760 748 650 754 520 C 762 330 694 175 512 175 Z" fill="url(#hair)"/>
+</svg>

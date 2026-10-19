@@ -1,0 +1,17 @@
+{
+  "name": "@vtubearea/engine-2d",
+  "version": "0.1.0",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@vtubearea/model-format": "workspace:*",
+    "pixi.js": "^8.22.0"
+  }
+}

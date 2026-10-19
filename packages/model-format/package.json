@@ -1,0 +1,17 @@
+{
+  "name": "@vtubearea/model-format",
+  "version": "0.1.0",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "generate:schema": "node scripts/generate_json_schema.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

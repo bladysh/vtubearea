@@ -1,0 +1,16 @@
+node_modules/
+dist/
+target/
+.env
+.env.local
+*.log
+.DS_Store
+# Downloaded by `pnpm setup:assets`
+apps/desktop/public/mediapipe/
+apps/desktop/src-tauri/gen/
+
+# Local planning notes, never published
+docs/OpenVTuber*.md
+
+# Local Claude Code tooling (third-party skills), not part of the product
+.claude/

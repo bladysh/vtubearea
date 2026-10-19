@@ -1,0 +1,30 @@
+{
+  "name": "vtubearea",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.19.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @vtubearea/desktop tauri dev",
+    "dev:web": "pnpm --filter @vtubearea/desktop dev",
+    "build": "pnpm --filter @vtubearea/desktop tauri build",
+    "setup:assets": "node scripts/fetch_tracking_assets.mjs",
+    "test": "vitest run",
+    "test:rust": "cargo test --workspace",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:rust",
+    "build:sample-models": "node scripts/sample_models/build_sample_models.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  }
+}

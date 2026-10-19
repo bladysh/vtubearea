@@ -1,0 +1,48 @@
+.hotkey-binding {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: var(--vta-space-2);
+}
+
+.hotkey-binding .vta-icon-button {
+  width: 30px;
+  height: 30px;
+}
+
+.hotkey-binding__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hotkey-binding__recorder {
+  width: 112px;
+  height: 30px;
+  padding: 0 var(--vta-space-3);
+  border: 1px solid var(--vta-color-border);
+  border-radius: var(--vta-radius-small);
+  font: 500 var(--vta-font-size-body) / 1 var(--vta-font-family-mono);
+  color: var(--vta-color-text);
+  background: var(--vta-color-surface-raised);
+  cursor: pointer;
+}
+
+.hotkey-binding__recorder[data-recording="true"] {
+  border-color: var(--vta-color-accent);
+  color: var(--vta-color-accent);
+  animation: hotkey-recording-pulse 1s ease-in-out infinite;
+}
+
+.hotkey-binding__error {
+  grid-column: 1 / -1;
+  font-size: var(--vta-font-size-small);
+  color: var(--vta-color-danger);
+}
+
+@keyframes hotkey-recording-pulse {
+  50% {
+    box-shadow: 0 0 0 3px var(--vta-color-accent-soft);
+  }
+}

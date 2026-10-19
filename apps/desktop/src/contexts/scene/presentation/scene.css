@@ -1,0 +1,217 @@
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.stage__background,
+.stage__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.stage__canvas {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.stage__canvas:active {
+  cursor: grabbing;
+}
+
+.stage__message {
+  position: absolute;
+  bottom: var(--vta-space-5);
+  left: 50%;
+  max-width: 560px;
+  padding: var(--vta-space-3) var(--vta-space-4);
+  border-radius: var(--vta-radius-medium);
+  color: var(--vta-color-danger);
+  background: var(--vta-color-glass);
+  transform: translateX(-50%);
+  white-space: pre-wrap;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--vta-space-2);
+}
+
+.media-tile {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--vta-radius-small);
+  background: var(--vta-color-surface-raised);
+  cursor: pointer;
+}
+
+.media-tile[aria-pressed="true"] {
+  border-color: var(--vta-color-accent);
+}
+
+.media-tile img,
+.media-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.media-tile__delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: var(--vta-color-text);
+  background: rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.media-tile:hover .media-tile__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--vta-space-2);
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--vta-color-border-subtle);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.color-swatch[aria-pressed="true"] {
+  border-color: var(--vta-color-accent);
+}
+
+.color-input {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--vta-color-border);
+  border-radius: var(--vta-radius-small);
+  background: transparent;
+  cursor: pointer;
+}
+
+.stage__items {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stage__item {
+  position: absolute;
+  width: auto;
+  max-width: none;
+  user-select: none;
+}
+
+.stage__items[data-editing="true"] .stage__item {
+  pointer-events: auto;
+  cursor: move;
+}
+
+.stage__item[data-selected="true"] {
+  outline: 2px dashed var(--vta-color-accent);
+  outline-offset: 4px;
+}
+
+.stage[data-editing-items="true"] .stage__canvas {
+  pointer-events: none;
+}
+
+.media-tile--contain img {
+  object-fit: contain;
+  background: var(--vta-color-background);
+}
+
+.media-tile__place {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: var(--vta-color-text-on-accent);
+  background: var(--vta-color-accent);
+  cursor: pointer;
+}
+
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vta-space-1);
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  align-items: center;
+  gap: var(--vta-space-2);
+  padding: 4px var(--vta-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--vta-radius-small);
+  background: var(--vta-color-surface-raised);
+  cursor: pointer;
+}
+
+.item-row[aria-pressed="true"] {
+  border-color: var(--vta-color-accent);
+}
+
+.item-row__thumbnail {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.item-row__name {
+  overflow: hidden;
+  font-size: var(--vta-font-size-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-row__layer {
+  font-size: 10px;
+  color: var(--vta-color-text-muted);
+}
+
+.item-row .vta-icon-button,
+.item-actions .vta-icon-button {
+  width: 28px;
+  height: 28px;
+}
+
+.item-actions {
+  display: flex;
+  gap: var(--vta-space-1);
+}

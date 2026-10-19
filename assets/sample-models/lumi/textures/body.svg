@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="404" viewBox="232 620 560 404">
+  <defs>
+    <linearGradient id="hoodie" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A2D31"/><stop offset="1" stop-color="#16181A"/></linearGradient>
+    <linearGradient id="neck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9BFAE"/><stop offset="1" stop-color="#FFE3D3"/></linearGradient>
+  </defs>
+  <path d="M 478 630 L 546 630 L 554 750 L 470 750 Z" fill="url(#neck)"/>
+  <path d="M 262 1024 C 262 860 330 762 470 732 C 490 768 534 768 554 732 C 694 762 762 860 762 1024 Z" fill="url(#hoodie)"/>
+  <path d="M 470 732 C 490 768 534 768 554 732" fill="none" stroke="#383E46" stroke-width="6"/>
+  <path d="M 488 762 L 480 860" stroke="#D1FE17" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 536 762 L 544 860" stroke="#D1FE17" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="480" cy="866" r="7" fill="#D1FE17"/><circle cx="544" cy="866" r="7" fill="#D1FE17"/>
+</svg>

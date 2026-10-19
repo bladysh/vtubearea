@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="424" height="300" viewBox="300 180 424 300">
+  <defs><linearGradient id="bangs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8B6BE0"/><stop offset="1" stop-color="#4A3391"/></linearGradient></defs>
+  <path d="M 330 440 C 318 300 400 192 512 192 C 624 192 706 300 694 440 L 664 380 L 642 456 L 602 362 L 562 444 L 532 352 L 492 452 L 462 352 L 422 444 L 392 370 L 362 456 Z" fill="url(#bangs)"/>
+  <path d="M 420 236 C 460 214 520 210 560 222" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="8" stroke-linecap="round"/>
+  <path d="M 600 250 C 630 270 650 300 660 330" fill="none" stroke="#D1FE17" stroke-opacity="0.8" stroke-width="6" stroke-linecap="round"/>
+</svg>
