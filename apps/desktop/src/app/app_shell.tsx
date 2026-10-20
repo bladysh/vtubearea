@@ -1,5 +1,6 @@
 import { Eye, Upload } from "lucide-react";
 import { I18nProvider, IconButton, create_translator } from "@vtubearea/ui";
+import { GesturesTab } from "../contexts/avatar/presentation/gestures_tab";
 import { IdleMotionSection } from "../contexts/avatar/presentation/idle_motion_section";
 import { ModelsPanel } from "../contexts/avatar/presentation/models_panel";
 import { ParameterMappingEditor } from "../contexts/avatar/presentation/parameter_mapping_editor";
@@ -21,7 +22,7 @@ function ActivePanel() {
     case "models":
       return <ModelsPanel />;
     case "tracking":
-      return <TrackingPanel motion_tab={<IdleMotionSection />} mapping_tab={<ParameterMappingEditor />} />;
+      return <TrackingPanel gestures_tab={<GesturesTab />} motion_tab={<IdleMotionSection />} mapping_tab={<ParameterMappingEditor />} />;
     case "scene":
       return <ScenePanel />;
     case "settings":

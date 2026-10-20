@@ -5,11 +5,12 @@ import { useEffectiveHotkey } from "../../settings/application/settings_store";
 import { useTrackingStore } from "../application/tracking_store";
 import type { SensitivityByGroup } from "../domain/tracking_settings";
 import { CameraPreview } from "./camera_preview";
+import { ExpressionCalibrationBlock } from "./expression_calibration_block";
 import { FaceCharts } from "./tracking_charts";
 
 const SENSITIVITY_GROUPS: readonly (keyof SensitivityByGroup)[] = ["head", "eyes", "mouth", "brows"];
 
-/** Calibration and switches first, sliders next, live charts at the bottom. */
+/** Calibration with the face preview, then switches, sliders, live charts at the bottom. */
 export function FaceTab() {
   const translate = useTranslate();
   const settings = useTrackingStore((state) => state.settings);
@@ -41,6 +42,10 @@ export function FaceTab() {
         </div>
         {calibration_status === "done" && <Badge tone="success">{translate("tracking.calibration_done")}</Badge>}
         {calibration_status === "no_face" && <Badge tone="danger">{translate("tracking.calibration_no_face")}</Badge>}
+        <ExpressionCalibrationBlock />
+        {is_running && settings.camera_preview_mode !== "hidden" && (
+          <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} focus="face" />
+        )}
       </Section>
 
       <Section title={translate("tracking.response")}>
@@ -49,6 +54,16 @@ export function FaceTab() {
           hint={translate("tracking.eye_sync_hint")}
           is_checked={settings.is_eye_sync_enabled}
           on_change={(is_enabled) => void update_settings({ is_eye_sync_enabled: is_enabled })}
+        />
+        <SliderField
+          label={translate("tracking.eye_closing_lateness")}
+          hint={translate("tracking.eye_closing_lateness_hint")}
+          value={settings.eye_closing_lateness}
+          minimum={-1}
+          maximum={1.5}
+          step={0.05}
+          format_value={(value) => translate(value > 0.02 ? "tracking.eye_closing.later" : value < -0.02 ? "tracking.eye_closing.earlier" : "tracking.eye_closing.as_is", { amount: Math.abs(value).toFixed(2) })}
+          on_change={(eye_closing_lateness) => void update_settings({ eye_closing_lateness })}
         />
         <SliderField
           label={translate("tracking.smoothness")}
@@ -77,9 +92,6 @@ export function FaceTab() {
       </Section>
 
       <Section title={translate("charts.face_monitor")}>
-        {is_running && settings.camera_preview_mode !== "hidden" && (
-          <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} focus="face" />
-        )}
         <FaceCharts />
       </Section>
     </>

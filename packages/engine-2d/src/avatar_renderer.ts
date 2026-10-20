@@ -222,7 +222,11 @@ async function load_textures(texture_paths: readonly string[], resolve_texture_u
 function painted_arm_texture_paths(model_hands: ModelHands | undefined): string[] {
   const arm_art = model_hands?.arms?.art;
   if (!arm_art) return [];
-  return [arm_art.upper_arm.texture, arm_art.forearm.texture, ...arm_art.hand_poses.map((hand_pose) => hand_pose.texture)];
+  const articulated_hands = arm_art.articulated_hands ? [arm_art.articulated_hands.palm_side, arm_art.articulated_hands.back_side] : [];
+  const articulated_textures = articulated_hands.flatMap((articulated_hand) =>
+    articulated_hand ? [articulated_hand.palm.texture, ...articulated_hand.fingers.flat().map((finger_bone) => finger_bone.texture)] : [],
+  );
+  return [arm_art.upper_arm.texture, arm_art.forearm.texture, ...arm_art.hand_poses.map((hand_pose) => hand_pose.texture), ...articulated_textures];
 }
 
 function create_hand_display(model_hands: ModelHands, texture_by_path: ReadonlyMap<string, Texture>): HandDisplay {

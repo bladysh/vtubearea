@@ -129,3 +129,87 @@
   min-width: 0;
   overflow: hidden;
 }
+
+/* Gesture picker sits on the same row as the key editor and matches its width. */
+.expression-card__gesture.vta-select {
+  flex: 0 0 auto;
+  width: 232px;
+}
+
+/* Gestures tab: a line drawing of the face next to the live reading. */
+.gesture-card {
+  display: flex;
+  gap: var(--vta-space-3);
+  align-items: flex-start;
+}
+
+.gesture-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--vta-space-2);
+  min-width: 0;
+}
+
+.gesture-card__actions {
+  display: flex;
+  gap: var(--vta-space-2);
+  align-items: center;
+}
+
+.gesture-card__used-by {
+  margin: 0;
+  font-size: 11px;
+  color: var(--vta-color-text-muted);
+}
+
+.gesture-pictogram {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  fill: none;
+  stroke: var(--vta-color-text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.gesture-pictogram__face {
+  fill: var(--vta-color-surface-raised);
+}
+
+.gesture-pictogram__eye {
+  fill: var(--vta-color-text-muted);
+  stroke: none;
+}
+
+/* Live strength fills the track; the tick marks how much is needed. */
+.gesture-meter {
+  position: relative;
+  height: 8px;
+  border-radius: var(--vta-radius-pill);
+  background: var(--vta-color-accent-soft);
+}
+
+.gesture-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--gesture-live);
+  border-radius: var(--vta-radius-pill);
+  background: var(--vta-color-accent);
+  transition: width 90ms linear;
+}
+
+.gesture-meter--shown .gesture-meter__fill {
+  background: var(--vta-color-success);
+}
+
+.gesture-meter__needed {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: var(--gesture-needed);
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--vta-color-text);
+}

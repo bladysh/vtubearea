@@ -5,8 +5,11 @@ export type SensitivityByGroup = Record<Exclude<TrackingInputGroup, "other">, nu
 /** video: camera image with tracking points; tracking_only: points and outlines, no image; hidden: nothing. */
 export type CameraPreviewMode = "video" | "tracking_only" | "hidden";
 
-/** model_art: the model's painted hand poses when it has them; drawn: every finger follows. */
-export type HandStyle = "model_art" | "drawn";
+/**
+ * auto: the model's articulated painted hand when it has one, else drawn; model_art: also the
+ * model's painted pose images; drawn: always drawn from the tracked points.
+ */
+export type HandStyle = "auto" | "model_art" | "drawn";
 
 /** Requested camera mode; the camera may deliver the closest mode it supports. */
 export interface CameraMode {
@@ -33,6 +36,8 @@ export interface TrackingSettings {
   is_hand_tracking_enabled: boolean;
   /** Close both eyes together unless one is clearly more closed (a wink). */
   is_eye_sync_enabled: boolean;
+  /** Above 0 the avatar's eyes shut later than the user's (only when the lids nearly meet), below 0 earlier. */
+  eye_closing_lateness: number;
   /** Draw a hand behind the head when it is farther from the camera than the face. */
   is_hand_depth_enabled: boolean;
   /** How much farther than the face (cm) a hand must be to go behind the head. */
@@ -40,6 +45,8 @@ export interface TrackingSettings {
   /** Point the forearm along the tracked hand, which places the elbow (and its foreshortening). */
   is_elbow_from_wrist_enabled: boolean;
   hand_style: HandStyle;
+  /** Scales how far the model lets its arms stretch past their drawn length: 0 = never, 1 = as the model says, 2 = twice that. */
+  arm_stretch_factor: number;
 }
 
 export const CAMERA_RESOLUTION_PRESETS: readonly { width: number; height: number }[] = [
@@ -63,9 +70,11 @@ export const DEFAULT_TRACKING_SETTINGS: TrackingSettings = {
   is_hand_mirrored: true,
   camera_preview_mode: "video",
   is_hand_tracking_enabled: false,
-  is_eye_sync_enabled: true,
+  is_eye_sync_enabled: false,
+  eye_closing_lateness: 0,
   is_hand_depth_enabled: true,
   hand_behind_head_threshold_centimeters: 6,
   is_elbow_from_wrist_enabled: true,
-  hand_style: "drawn",
+  hand_style: "auto",
+  arm_stretch_factor: 1,
 };

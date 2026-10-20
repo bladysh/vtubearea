@@ -20,6 +20,8 @@ export const DERIVED_TRACKING_INPUT_NAMES = [
   "MouthOpen",
   "MouthSmile",
   "MouthX",
+  "MouthFunnel",
+  "MouthStretch",
   "BrowLeftY",
   "BrowRightY",
   "CheekPuff",
@@ -68,6 +70,8 @@ const behavior_by_input: Record<DerivedTrackingInputName, TrackingInputBehavior>
   MouthOpen: mouth_behavior,
   MouthSmile: mouth_behavior,
   MouthX: mouth_behavior,
+  MouthFunnel: mouth_behavior,
+  MouthStretch: mouth_behavior,
   BrowLeftY: brow_behavior,
   BrowRightY: brow_behavior,
   CheekPuff: mouth_behavior,
@@ -139,6 +143,10 @@ export function derive_tracking_inputs(face_frame: FaceFrame, is_mirrored: boole
       (blendshape("mouthSmileLeft") + blendshape("mouthSmileRight")) / 2 -
       (blendshape("mouthFrownLeft") + blendshape("mouthFrownRight")) / 2,
     MouthX: (blendshape("mouthRight") - blendshape("mouthLeft")) * mirror_sign,
+    // Lips pushed forward or rounded ("o", "u").
+    MouthFunnel: Math.max(blendshape("mouthFunnel"), blendshape("mouthPucker")),
+    // Corners pulled out sideways ("ee").
+    MouthStretch: (blendshape("mouthStretchLeft") + blendshape("mouthStretchRight")) / 2,
     BrowLeftY: left_brow,
     BrowRightY: right_brow,
     CheekPuff: blendshape("cheekPuff"),

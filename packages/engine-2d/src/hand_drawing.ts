@@ -2,6 +2,12 @@ import type { Graphics } from "pixi.js";
 
 export type CanvasPoint = [number, number];
 
+/**
+ * How a painted arm shows its hand: a painted pose image, a hand drawn from the tracked points,
+ * or the model's articulated painted hand (every finger follows).
+ */
+export type PaintedHandChoice = { kind: "sprite"; pose_id: string } | { kind: "drawn" } | { kind: "articulated" };
+
 export interface RenderedArm {
   shoulder: CanvasPoint;
   elbow: CanvasPoint;
@@ -21,8 +27,7 @@ export interface RenderedHand {
   is_behind_head?: boolean;
   /** Models with painted arms: which hand image to show and where it goes. */
   painted_hand?: {
-    /** null = draw the hand from the tracked points, so every finger follows. */
-    pose_id: string | null;
+    hand: PaintedHandChoice;
     wrist: CanvasPoint;
     index_base: CanvasPoint;
     pinky_base: CanvasPoint;

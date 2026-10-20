@@ -1,3 +1,4 @@
+import type { PaintedHandChoice } from "@vtubearea/engine-2d";
 import type { PaintedArms } from "@vtubearea/model-format";
 import type { FramePoint } from "./hand_placement";
 import { HandPoseSelector } from "./hand_pose_selector";
@@ -9,13 +10,15 @@ export interface PaintedHandFrame {
   pinky_base: FramePoint;
 }
 
+/** auto: the model's articulated hand if it has one, else drawn; model_art: also its pose images. */
+export type PaintedHandPreference = "auto" | "model_art" | "drawn";
+
 export interface PaintedArmStep {
   hand_frame: PaintedHandFrame;
-  /** null = no finger poses painted: draw the tracked hand so every finger follows. */
-  pose_id: string | null;
+  hand: PaintedHandChoice;
   /** 0 = resting as painted, 1 = following the tracked hand. */
   tracked_weight: number;
-  /** The last tracked hand moved to the blended wrist; drawn when pose_id is null. */
+  /** The last tracked hand moved to the blended wrist; used by drawn and articulated hands. */
   hand_points: FramePoint[];
 }
 
@@ -28,8 +31,8 @@ const PINKY_BASE = 17;
 export class PaintedArmMotion {
   private tracked_weight = 0;
   private last_tracked_frame: PaintedHandFrame | null = null;
-  /** The pose image or null (drawn hand) while tracked. */
-  private last_tracked_pose_id: string | null = null;
+  /** How the hand shows while tracked. */
+  private last_tracked_hand: PaintedHandChoice = { kind: "drawn" };
   private last_tracked_points: readonly FramePoint[] = [];
   private readonly pose_selector = new HandPoseSelector();
 
@@ -38,19 +41,17 @@ export class PaintedArmMotion {
     tracked_points: readonly FramePoint[] | null,
     rest_frame: PaintedHandFrame,
     delta_seconds: number,
-    /** Draw the tracked hand even if the model has painted finger poses. */
-    prefers_drawn_hand = false,
+    hand_preference: PaintedHandPreference = "auto",
   ): PaintedArmStep {
     if (tracked_points && tracked_points.length >= 21) {
       this.last_tracked_points = tracked_points;
       this.last_tracked_frame = { wrist: tracked_points[0]!, index_base: tracked_points[INDEX_FINGER_BASE]!, pinky_base: tracked_points[PINKY_BASE]! };
-      const has_finger_poses = arm_art.hand_poses.some((hand_pose) => hand_pose.extended_fingers);
-      this.last_tracked_pose_id = has_finger_poses && !prefers_drawn_hand ? this.pose_selector.select(arm_art.hand_poses, tracked_points) : null;
+      this.last_tracked_hand = this.tracked_hand_choice(arm_art, tracked_points, hand_preference);
     }
     const weight_step = delta_seconds / REST_BLEND_SECONDS;
     this.tracked_weight = Math.min(1, Math.max(0, this.tracked_weight + (tracked_points ? weight_step : -weight_step)));
     if (!this.last_tracked_frame || this.tracked_weight === 0) {
-      return { hand_frame: rest_frame, pose_id: arm_art.rest_hand_pose_id, tracked_weight: 0, hand_points: [] };
+      return { hand_frame: rest_frame, hand: { kind: "sprite", pose_id: arm_art.rest_hand_pose_id }, tracked_weight: 0, hand_points: [] };
     }
     const eased_weight = this.tracked_weight * this.tracked_weight * (3 - 2 * this.tracked_weight);
     const blend = (rest_point: FramePoint, tracked_point: FramePoint): FramePoint => [
@@ -67,9 +68,17 @@ export class PaintedArmMotion {
         pinky_base: blend(rest_frame.pinky_base, tracked_frame.pinky_base),
       },
       // The image swaps halfway, while the hand is moving and the swap is least visible.
-      pose_id: eased_weight > 0.5 ? this.last_tracked_pose_id : arm_art.rest_hand_pose_id,
+      hand: eased_weight > 0.5 ? this.last_tracked_hand : { kind: "sprite", pose_id: arm_art.rest_hand_pose_id },
       tracked_weight: eased_weight,
       hand_points: this.last_tracked_points.map(([point_x, point_y]): FramePoint => [point_x + shift_x, point_y + shift_y]),
     };
+  }
+
+  private tracked_hand_choice(arm_art: PaintedArms, tracked_points: readonly FramePoint[], hand_preference: PaintedHandPreference): PaintedHandChoice {
+    if (hand_preference === "drawn") return { kind: "drawn" };
+    if (arm_art.articulated_hands) return { kind: "articulated" };
+    const has_finger_poses = arm_art.hand_poses.some((hand_pose) => hand_pose.extended_fingers);
+    const pose_id = hand_preference === "model_art" && has_finger_poses ? this.pose_selector.select(arm_art.hand_poses, tracked_points) : null;
+    return pose_id ? { kind: "sprite", pose_id } : { kind: "drawn" };
   }
 }

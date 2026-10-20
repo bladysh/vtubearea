@@ -31,6 +31,10 @@ y goes down. The app scales the canvas to the window.
 | `physics` | Springs that turn motion of one parameter into sway on another |
 | `expressions` | Named sets of parameter values with a fade time |
 
+A parameter may have `snap: { values, hysteresis }` when its art is drawn in steps (for example
+squinting lids): the value jumps to the nearest step but only leaves the current one once it is
+`hysteresis` past the halfway point, so tracking noise does not flicker between two drawings.
+
 Ids: letters, digits and `_`, starting with a letter. Parameter ids should follow
 Live2D names (`ParamAngleX`, `ParamEyeLOpen`, ...) so default tracking works.
 
@@ -106,7 +110,7 @@ face: the offset of the user's hand from their face (measured in face heights) i
 applied to `face_anchor.center` scaled by `face_anchor.height`, so a hand touching
 the cheek touches the model's cheek. With `group_id` the anchor moves with that
 group (usually the head) when the model turns or tilts. `hand_scale` shrinks or grows the hand around the palm center
-(cartoon models with big heads look better below 1). Hands are drawn above all layers,
+(cartoon models with big heads look better below 1). Optional `face_anchor.width` (cheek to cheek) sets how far sideways a hand sits; it defaults to 0.75 of the height, like a real face, and is worth setting for wide cartoon heads. Hands are drawn above all layers,
 except when the tracked hand is farther from the camera than the face (reaching behind
 the head): then it is drawn just below the first layer whose `draw_order` is at least
 `behind_head_draw_order` (for example the face), so the head covers part of it.

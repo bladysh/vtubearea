@@ -4,8 +4,9 @@ import { ExpressionMixer, type ExpressionPlayback } from "../domain/expression_m
 import { solve_arm } from "../domain/arm_solver";
 import { hand_scale_pivots, place_hand_on_canvas, type FramePoint, type UserFaceAnchor } from "../domain/hand_placement";
 import { AutoBlink, breathing_value } from "../domain/idle_motion";
-import { PaintedArmMotion, type PaintedHandFrame } from "../domain/painted_arm_motion";
+import { PaintedArmMotion, type PaintedHandFrame, type PaintedHandPreference } from "../domain/painted_arm_motion";
 import { ParameterPhysics } from "../domain/parameter_physics";
+import { ParameterSnapper } from "../domain/parameter_snap";
 import { map_input_value, smooth_toward, type ParameterMapping } from "../domain/parameter_mapping";
 import type { AvatarControlPort, AvatarModelDescription } from "./avatar_control_port";
 
@@ -23,8 +24,9 @@ export interface IdleMotionSettings {
 export interface ArmOptions {
   /** Place the elbow along the tracked hand's direction instead of guessing it. */
   is_elbow_from_wrist_enabled: boolean;
-  /** Draw tracked hands even when the model has painted hand poses. */
-  prefers_drawn_hands: boolean;
+  hand_preference: PaintedHandPreference;
+  /** Multiplies the model's arm stretch beyond 1 (see max_stretch in the model format). */
+  arm_stretch_factor: number;
 }
 
 export interface TrackingFrameInput {
@@ -74,13 +76,14 @@ export class AvatarFrameComposer implements AvatarControlPort {
   private overrides = new Map<string, ParameterOverride>();
   private expression_mixer = new ExpressionMixer();
   private parameter_physics = new ParameterPhysics([]);
+  private readonly parameter_snapper = new ParameterSnapper();
   private readonly auto_blink: AutoBlink;
   private tracking_weight = 0;
   private hand_opacities: number[] = [0, 0];
   private painted_arm_motions = [new PaintedArmMotion(), new PaintedArmMotion()];
   private elapsed_seconds = 0;
   private idle_motion_settings: IdleMotionSettings = { is_auto_blink_enabled: true, is_breathing_enabled: true };
-  private arm_options: ArmOptions = { is_elbow_from_wrist_enabled: true, prefers_drawn_hands: true };
+  private arm_options: ArmOptions = { is_elbow_from_wrist_enabled: true, hand_preference: "auto", arm_stretch_factor: 1 };
 
   constructor(private readonly idle_motion_config: IdleMotionConfig) {
     this.auto_blink = new AutoBlink(
@@ -100,6 +103,7 @@ export class AvatarFrameComposer implements AvatarControlPort {
     this.overrides.clear();
     this.expression_mixer = new ExpressionMixer();
     this.parameter_physics = new ParameterPhysics(model_definition?.physics ?? []);
+    this.parameter_snapper.reset();
     this.painted_arm_motions = [new PaintedArmMotion(), new PaintedArmMotion()];
   }
 
@@ -127,6 +131,7 @@ export class AvatarFrameComposer implements AvatarControlPort {
     this.apply_overrides(next_values);
     this.parameter_physics.step(next_values, delta_seconds);
     this.clamp_to_model_ranges(next_values);
+    this.snap_stepped_parameters(next_values);
     this.parameter_values = next_values;
     return next_values;
   }
@@ -206,14 +211,15 @@ export class AvatarFrameComposer implements AvatarControlPort {
     const to_canvas = (point: FramePoint) => move_with_group(arms.group_id, is_mirrored ? [2 * mirror_axis_x - point[0], point[1]] : point);
     const rest_pose = arm_art.hand_poses.find((hand_pose) => hand_pose.id === arm_art.rest_hand_pose_id)!;
     const rest_frame: PaintedHandFrame = { wrist: to_canvas(rest_pose.wrist), index_base: to_canvas(rest_pose.index_base), pinky_base: to_canvas(rest_pose.pinky_base) };
-    const arm_step = this.painted_arm_motions[hand_index]!.step(arm_art, tracked_points, rest_frame, delta_seconds, this.arm_options.prefers_drawn_hands);
+    const arm_step = this.painted_arm_motions[hand_index]!.step(arm_art, tracked_points, rest_frame, delta_seconds, this.arm_options.hand_preference);
 
     const upper_arm_length = distance_between(arm_art.upper_arm.start, arm_art.upper_arm.end);
     const forearm_length = distance_between(arm_art.forearm.start, arm_art.forearm.end);
     // Painted sleeves look wrong stretched, so out of reach the whole hand is pulled back toward the shoulder.
     const { wrist } = arm_step.hand_frame;
     const reach = distance_between(shoulder, wrist);
-    const maximum_reach = (upper_arm_length + forearm_length) * 0.999;
+    const max_stretch = 1 + (arm_art.max_stretch - 1) * this.arm_options.arm_stretch_factor;
+    const maximum_reach = (upper_arm_length + forearm_length) * max_stretch * 0.999;
     const pull = reach > maximum_reach ? (reach - maximum_reach) / reach : 0;
     const pull_back = (point: FramePoint): FramePoint => [point[0] - (wrist[0] - shoulder[0]) * pull, point[1] - (wrist[1] - shoulder[1]) * pull];
     const hand_frame: PaintedHandFrame = {
@@ -231,7 +237,7 @@ export class AvatarFrameComposer implements AvatarControlPort {
       opacity: 1,
       is_behind_head: is_behind_head && arm_step.tracked_weight > 0.5,
       arm: { ...arm_pose, width: arms.width, color: arms.color, outline_color: arms.outline_color },
-      painted_hand: { pose_id: arm_step.pose_id, ...hand_frame, is_mirrored },
+      painted_hand: { hand: arm_step.hand, ...hand_frame, is_mirrored },
     };
   }
 
@@ -319,6 +325,13 @@ export class AvatarFrameComposer implements AvatarControlPort {
       } else {
         next_values[parameter_id] = parameter_override.value;
       }
+    }
+  }
+
+  private snap_stepped_parameters(next_values: Record<string, number>): void {
+    for (const parameter of this.model_definition?.parameters ?? []) {
+      const value = next_values[parameter.id];
+      if (parameter.snap && value !== undefined) next_values[parameter.id] = this.parameter_snapper.snap(parameter.id, value, parameter.snap);
     }
   }
 

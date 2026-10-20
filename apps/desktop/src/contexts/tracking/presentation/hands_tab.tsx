@@ -4,7 +4,7 @@ import { useTrackingStore } from "../application/tracking_store";
 import { CameraPreview } from "./camera_preview";
 import { HandCharts } from "./tracking_charts";
 
-/** Switches first, then sliders, then the live preview and charts at the bottom. */
+/** Switches with the live preview under them, then sliders, and charts at the bottom. */
 export function HandsTab() {
   const translate = useTranslate();
   const settings = useTrackingStore((state) => state.settings);
@@ -50,6 +50,7 @@ export function HandsTab() {
                   label={translate("tracking.hand_style")}
                   value={settings.hand_style}
                   options={[
+                    { value: "auto", label: translate("tracking.hand_style_auto") },
                     { value: "drawn", label: translate("tracking.hand_style_drawn") },
                     { value: "model_art", label: translate("tracking.hand_style_model_art") },
                   ]}
@@ -58,6 +59,9 @@ export function HandsTab() {
               }
             />
           </>
+        )}
+        {is_enabled && is_running && settings.camera_preview_mode !== "hidden" && (
+          <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} />
         )}
       </Section>
 
@@ -71,6 +75,16 @@ export function HandsTab() {
             maximum={1}
             format_value={(value) => `${Math.round(value * 100)}%`}
             on_change={(hand_smoothness) => void update_settings({ hand_smoothness })}
+          />
+          <SliderField
+            label={translate("tracking.arm_stretch")}
+            hint={translate("tracking.arm_stretch_hint")}
+            value={settings.arm_stretch_factor}
+            minimum={0}
+            maximum={2}
+            step={0.05}
+            format_value={(value) => `${Math.round(value * 100)}%`}
+            on_change={(arm_stretch_factor) => void update_settings({ arm_stretch_factor })}
           />
           {settings.is_hand_depth_enabled && (
             <SliderField
@@ -89,9 +103,6 @@ export function HandsTab() {
 
       {is_enabled && (
         <Section title={translate("charts.hand_monitor")}>
-          {is_running && settings.camera_preview_mode !== "hidden" && (
-            <CameraPreview is_mirrored={settings.is_mirrored} shows_video={settings.camera_preview_mode === "video"} />
-          )}
           <HandCharts />
         </Section>
       )}

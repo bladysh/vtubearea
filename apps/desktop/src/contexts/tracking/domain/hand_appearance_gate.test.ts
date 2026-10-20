@@ -23,11 +23,20 @@ describe("HandAppearanceGate", () => {
     expect(gate.filter([detection_at(0.2, 0.7)], 66, face_box)).toHaveLength(0);
   });
 
-  it("never lets a hand appear out of nowhere on the face", () => {
+  it("never lets a small phantom appear out of nowhere on the face", () => {
     const gate = new HandAppearanceGate(3);
-    for (let frame_index = 0; frame_index < 10; frame_index += 1) {
+    for (let frame_index = 0; frame_index < 20; frame_index += 1) {
       expect(gate.filter([detection_at(0.5, 0.4)], frame_index * 33, face_box)).toHaveLength(0);
     }
+  });
+
+  it("accepts a real, hand-sized hand raised onto the face once it stays a while", () => {
+    const gate = new HandAppearanceGate(3);
+    // Palm 0.2 tall against a 0.4 face: hand-sized.
+    const raised_hand: HandDetection = { pose: { landmarks: Array.from({ length: 21 }, (_, index) => [0.5, index === 0 ? 0.5 : 0.3, 0] as [number, number, number]) } };
+    const results = Array.from({ length: 12 }, (_, frame_index) => gate.filter([raised_hand], frame_index * 33, face_box).length);
+    expect(results.slice(0, 11).every((count) => count === 0)).toBe(true);
+    expect(results[11]).toBe(1);
   });
 
   it("lets a tracked hand move over the face", () => {

@@ -6,6 +6,7 @@ import { useSettingsStore } from "../contexts/settings/application/settings_stor
 import { useTrackingStore } from "../contexts/tracking/application/tracking_store";
 import { avatar_frame_composer } from "./app_runtime";
 import { useHotkeyRouter } from "./hotkey_router";
+import { useFaceGestureRouter } from "./use_face_gesture_router";
 
 /** One-time startup work and global wiring between stores and runtime services. */
 export function useAppBootstrap(): void {
@@ -29,12 +30,13 @@ export function useAppBootstrap(): void {
 
   useEffect(() => {
     const apply_arm_options = () => {
-      const { is_elbow_from_wrist_enabled, hand_style } = useTrackingStore.getState().settings;
-      avatar_frame_composer.set_arm_options({ is_elbow_from_wrist_enabled, prefers_drawn_hands: hand_style === "drawn" });
+      const { is_elbow_from_wrist_enabled, hand_style, arm_stretch_factor } = useTrackingStore.getState().settings;
+      avatar_frame_composer.set_arm_options({ is_elbow_from_wrist_enabled, hand_preference: hand_style, arm_stretch_factor });
     };
     apply_arm_options();
     return useTrackingStore.subscribe(apply_arm_options);
   }, []);
 
   useHotkeyRouter();
+  useFaceGestureRouter();
 }

@@ -1,6 +1,8 @@
 import type { FaceFrame, TrackingSource } from "@vtubearea/protocol";
+import { apply_expression_ranges, ExpressionRangeRecorder, type ExpressionRanges } from "../domain/expression_calibration";
 import { apply_neutral_face, NeutralFaceRecorder, type NeutralFace } from "../domain/face_calibration";
 import { AdaptiveRange } from "../domain/adaptive_range";
+import { bend_eye_closing } from "../domain/eye_openness";
 import type { FaceAnchor } from "../domain/face_anchor";
 import type { AvatarSide } from "../domain/hand_inputs";
 import type { TrackedHandSkeleton } from "../domain/hand_skeleton";
@@ -34,6 +36,8 @@ export class TrackingHub {
   private settings: TrackingSettings = DEFAULT_TRACKING_SETTINGS;
   private neutral_face: NeutralFace | null = null;
   private calibration_recorder: NeutralFaceRecorder | null = null;
+  private expression_ranges: ExpressionRanges | null = null;
+  private expression_recorder: ExpressionRangeRecorder | null = null;
   private readonly filters = new Map<string, OneEuroFilter>();
   private readonly frame_arrival_times_ms: number[] = [];
   private input_values: TrackingInputValues = {};
@@ -64,6 +68,23 @@ export class TrackingHub {
     this.neutral_face = neutral_face;
   }
 
+  set_expression_ranges(expression_ranges: ExpressionRanges | null): void {
+    this.expression_ranges = expression_ranges;
+  }
+
+  /**
+   * Records how far the user really moves brows and mouth (relative to the relaxed face) while
+   * they pull faces for the given time. Resolves to null if no face was seen.
+   */
+  async calibrate_expressions(duration_ms: number): Promise<ExpressionRanges | null> {
+    this.expression_recorder = new ExpressionRangeRecorder();
+    await new Promise((resolve) => setTimeout(resolve, duration_ms));
+    const expression_ranges = this.expression_recorder.finish();
+    this.expression_recorder = null;
+    if (expression_ranges) this.expression_ranges = expression_ranges;
+    return expression_ranges;
+  }
+
   /** Records the relaxed face for the given time. Resolves to null if no face was seen. */
   async calibrate(duration_ms: number): Promise<NeutralFace | null> {
     this.calibration_recorder = new NeutralFaceRecorder();
@@ -90,10 +111,12 @@ export class TrackingHub {
     const raw_inputs = derive_tracking_inputs(face_frame, this.settings.is_mirrored, this.settings.is_eye_sync_enabled);
     for (const [input_name, eye_range] of Object.entries(this.eye_ranges)) {
       const eye_openness = raw_inputs[input_name];
-      if (eye_openness !== undefined) raw_inputs[input_name] = eye_range.normalize(eye_openness, delta_seconds);
+      if (eye_openness !== undefined) raw_inputs[input_name] = bend_eye_closing(eye_range.normalize(eye_openness, delta_seconds), this.settings.eye_closing_lateness);
     }
     this.calibration_recorder?.add_sample(raw_inputs);
-    const calibrated_inputs = apply_neutral_face(raw_inputs, this.neutral_face);
+    const relaxed_relative_inputs = apply_neutral_face(raw_inputs, this.neutral_face);
+    this.expression_recorder?.add_sample(relaxed_relative_inputs);
+    const calibrated_inputs = apply_expression_ranges(relaxed_relative_inputs, this.expression_ranges);
     this.input_values = this.filter_inputs(this.apply_sensitivity(calibrated_inputs), arrival_ms / 1000);
   }
 

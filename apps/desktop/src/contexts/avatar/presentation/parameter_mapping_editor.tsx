@@ -4,7 +4,7 @@ import { Button, RangeMeter, Section, useTranslate } from "@vtubearea/ui";
 import { avatar_control, tracking_hub } from "../../../app/app_runtime";
 import { usePolledValue } from "../../../shared/use_polled_value";
 import { useAvatarStore } from "../application/avatar_store";
-import { create_default_parameter_mappings } from "../domain/default_parameter_mappings";
+import { mappings_with_defaults } from "../domain/default_parameter_mappings";
 import type { ParameterMapping } from "../domain/parameter_mapping";
 
 type NumericMappingField = "input_minimum" | "input_maximum" | "output_minimum" | "output_maximum" | "smoothing";
@@ -27,7 +27,7 @@ export function ParameterMappingEditor() {
   const reset_mappings = useAvatarStore((state) => state.reset_mappings);
 
   const mappings: ParameterMapping[] = useMemo(
-    () => saved_mappings ?? (model_definition ? create_default_parameter_mappings(model_definition.parameters) : []),
+    () => (model_definition ? mappings_with_defaults(saved_mappings, model_definition.parameters) : []),
     [saved_mappings, model_definition],
   );
 

@@ -1,11 +1,15 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse_model_definition } from "./parse_model_definition";
 
-const SAMPLE_MODEL_IDS = ["lumi", "kuro", "haru"];
+const SAMPLE_MODELS_DIRECTORY = new URL("../../../assets/sample-models/", import.meta.url);
+// Every sample model on disk, so models kept only locally (not in git) are checked too.
+const SAMPLE_MODEL_IDS = readdirSync(SAMPLE_MODELS_DIRECTORY, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
 
 function read_sample_model(model_id: string): unknown {
-  return JSON.parse(readFileSync(new URL(`../../../assets/sample-models/${model_id}/model.json`, import.meta.url), "utf8"));
+  return JSON.parse(readFileSync(new URL(`${model_id}/model.json`, SAMPLE_MODELS_DIRECTORY), "utf8"));
 }
 
 function minimal_model(overrides: Record<string, unknown> = {}) {

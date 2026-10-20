@@ -31,6 +31,11 @@ export const model_parameter_schema = z.object({
   minimum: z.number(),
   maximum: z.number(),
   default_value: z.number(),
+  /**
+   * The parameter only takes these values (for art drawn in steps, like squinting lids). A step is
+   * left only once the value is `hysteresis` past the halfway point, so noise does not flicker.
+   */
+  snap: z.object({ values: z.array(z.number()).min(2), hysteresis: z.number().min(0).default(0.05) }).optional(),
 });
 
 /** An invisible transform node. Layers and other groups hang under it. */
@@ -103,6 +108,18 @@ const painted_hand_pose_schema = painted_part_schema.extend({
 });
 
 /**
+ * A painted hand cut into pieces like a Live2D hand: the palm turns with the tracked hand and
+ * every finger segment follows its tracked joints. Bones run base to tip; for the thumb the
+ * first bone starts at its root on the palm (MediaPipe points 1-2-3-4), for the other fingers
+ * at the knuckle (5-6-7-8 and so on).
+ */
+const articulated_hand_schema = z.object({
+  palm: painted_part_schema.extend({ wrist: point_schema, index_base: point_schema, pinky_base: point_schema }),
+  /** Thumb, index, middle, ring, pinky; three segments each, base first. */
+  fingers: z.array(z.array(painted_bone_schema).length(3)).length(5),
+});
+
+/**
  * Painted arms instead of drawn ones. Art is the model's RIGHT arm (viewer's left) in the rest
  * pose; the left arm is its mirror image around the middle between the shoulders.
  */
@@ -114,6 +131,13 @@ const painted_arms_schema = z.object({
   hand_poses: z.array(painted_hand_pose_schema).min(1),
   /** Pose shown while the hand is not tracked; the arm then hangs as painted. */
   rest_hand_pose_id: identifier_schema,
+  /**
+   * How far the arm may stretch past its painted length to reach the tracked hand (1 = not at
+   * all, the hand is pulled back instead). Rubber-hose cartoon arms can stretch a lot.
+   */
+  max_stretch: z.number().min(1).default(1),
+  /** Hands where every finger follows; the back view is used when the user shows the back of the hand. */
+  articulated_hands: z.object({ palm_side: articulated_hand_schema, back_side: articulated_hand_schema.optional() }).optional(),
 });
 
 /**
@@ -134,6 +158,11 @@ export const model_hands_schema = z.object({
     center: point_schema,
     /** Chin to forehead, canvas pixels. */
     height: z.number().positive(),
+    /**
+     * Cheek to cheek, canvas pixels; defaults to a real face's proportions (0.75 of the height).
+     * Cartoon heads are often much wider: this keeps a hand held beside the face beside it.
+     */
+    width: z.number().positive().optional(),
     /** Group the face moves with (head turns, tilts); the anchor follows it. */
     group_id: identifier_schema.optional(),
   }),
@@ -193,3 +222,4 @@ export type ModelExpression = z.infer<typeof model_expression_schema>;
 export type ModelHands = z.infer<typeof model_hands_schema>;
 export type PaintedArms = z.infer<typeof painted_arms_schema>;
 export type PaintedHandPose = z.infer<typeof painted_hand_pose_schema>;
+export type ArticulatedHand = z.infer<typeof articulated_hand_schema>;

@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { ModelExpression } from "@vtubearea/model-format";
-import { Button, SegmentedControl, Section, SliderField, useTranslate } from "@vtubearea/ui";
+import { Play, Square } from "lucide-react";
+import { Button, Field, SegmentedControl, Section, SliderField, useTranslate } from "@vtubearea/ui";
 import { avatar_control } from "../../../app/app_runtime";
 import { are_global_shortcuts_supported } from "../../../shared/global_shortcuts";
 import type { HotkeyBinding } from "../../../shared/hotkey";
@@ -10,10 +11,13 @@ import { usePolledValue } from "../../../shared/use_polled_value";
 import { useSettingsStore } from "../../settings/application/settings_store";
 import { expression_playback_for, useAvatarStore } from "../application/avatar_store";
 import type { ExpressionPlaybackMode } from "../domain/expression_mixer";
+import { FACE_GESTURES, type FaceGesture, type GestureTrigger, type GestureTriggerMode } from "../domain/face_gesture";
 
 // Stable empty values: a fresh [] or {} in a selector would re-render forever.
 const NO_EXPRESSIONS: ModelExpression[] = [];
 const NO_BINDINGS: Record<string, HotkeyBinding | undefined> = {};
+const NO_GESTURES: Record<string, GestureTrigger | undefined> = {};
+const NO_GESTURE = "none";
 
 export function ExpressionsSection() {
   const translate = useTranslate();
@@ -24,6 +28,15 @@ export function ExpressionsSection() {
   const playback_state = useAvatarStore(
     useShallow((state) => ({ active_model_id: state.active_model_id, expression_playback_by_model: state.expression_playback_by_model })),
   );
+  const expression_gestures = useAvatarStore((state) =>
+    state.active_model_id ? (state.expression_gestures_by_model[state.active_model_id] ?? NO_GESTURES) : NO_GESTURES,
+  );
+  const set_expression_gesture = useAvatarStore((state) => state.set_expression_gesture);
+  const set_expression_gesture_mode = useAvatarStore((state) => state.set_expression_gesture_mode);
+  const gesture_mode_options: { value: GestureTriggerMode; label: string }[] = [
+    { value: "while_held", label: translate("expressions.gesture_mode.while_held") },
+    { value: "toggle", label: translate("expressions.gesture_mode.toggle") },
+  ];
   const toggle_expression = useAvatarStore((state) => state.toggle_expression);
   const set_expression_hotkey = useAvatarStore((state) => state.set_expression_hotkey);
   const set_expression_playback = useAvatarStore((state) => state.set_expression_playback);
@@ -32,6 +45,10 @@ export function ExpressionsSection() {
   const read_active_expression = useCallback(() => avatar_control.get_active_expression_id(), []);
   const active_expression_id = usePolledValue(read_active_expression, 120);
 
+  const gesture_options: { value: FaceGesture | typeof NO_GESTURE; label: string }[] = [
+    { value: NO_GESTURE, label: translate("expressions.gesture.none") },
+    ...FACE_GESTURES.map((gesture) => ({ value: gesture, label: translate(`expressions.gesture.${gesture}`) })),
+  ];
   const mode_options: { value: ExpressionPlaybackMode; label: string }[] = [
     { value: "once", label: translate("expressions.mode.once") },
     { value: "hold", label: translate("expressions.mode.hold") },
@@ -52,19 +69,59 @@ export function ExpressionsSection() {
         const binding = expression_bindings[expression.id] ?? null;
         const playback = expression_playback_for(playback_state, expression.id);
         return (
-          <Section key={expression.id}>
+          <Section
+            key={expression.id}
+            title={expression.display_name}
+            actions={
+              <Button
+                size="small"
+                variant={is_active ? "primary" : "secondary"}
+                aria-pressed={is_active}
+                icon={is_active ? <Square size={14} /> : <Play size={14} />}
+                onClick={() => toggle_expression(expression.id)}
+              >
+                {translate(is_active ? "expressions.stop" : "expressions.play")}
+              </Button>
+            }
+          >
+            {/* Two ways to start it: a key, a face gesture, or both. */}
             <HotkeyBindingEditor
-              label={expression.display_name}
-              leading={
-                <Button size="small" variant={is_active ? "primary" : "secondary"} aria-pressed={is_active} onClick={() => toggle_expression(expression.id)}>
-                  {expression.display_name}
-                </Button>
-              }
+              label={translate("expressions.trigger_key")}
               binding={binding}
               allow_plain_keys
               error_message={binding?.is_global ? hotkey_errors[binding.hotkey_text] : undefined}
               on_change={(next_binding) => set_expression_hotkey(expression.id, next_binding)}
             />
+            {/* Same row layout as the key above, so both triggers line up. */}
+            <Field
+              label={translate("expressions.trigger_gesture")}
+              hint={translate("expressions.trigger_gesture_hint")}
+              control={
+                <select
+                  className="vta-select expression-card__gesture"
+                  aria-label={translate("expressions.trigger_gesture")}
+                  value={expression_gestures[expression.id]?.gesture ?? NO_GESTURE}
+                  onChange={(change_event) => {
+                    const gesture = change_event.target.value as FaceGesture | typeof NO_GESTURE;
+                    set_expression_gesture(expression.id, gesture === NO_GESTURE ? null : gesture);
+                  }}
+                >
+                  {gesture_options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              }
+            />
+            {expression_gestures[expression.id] && (
+              <SegmentedControl
+                label={translate("expressions.gesture_mode")}
+                value={expression_gestures[expression.id]!.mode}
+                options={gesture_mode_options}
+                on_change={(mode) => set_expression_gesture_mode(expression.id, mode)}
+              />
+            )}
             <SegmentedControl
               label={translate("expressions.mode")}
               value={playback.mode}

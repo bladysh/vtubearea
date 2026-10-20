@@ -10,6 +10,8 @@ export interface UserFaceAnchor {
 
 // Used until the face has been seen once: a face roughly centered, 40% of the frame tall.
 const FALLBACK_USER_FACE: UserFaceAnchor = { center: [0, -0.05], height: 0.4 };
+/** Width of a real face as a share of its height (chin to forehead). */
+const REAL_FACE_WIDTH_RATIO = 0.75;
 // Wrist and the four finger bases.
 const PALM_POINT_INDICES = [0, 5, 9, 13, 17];
 // Gap between the two hands (in face heights) below which they count as touching,
@@ -31,16 +33,20 @@ export function place_hand_on_canvas(
   scale_pivot: FramePoint = palm_center_of(frame_points),
 ): FramePoint[] {
   const face = user_face ?? FALLBACK_USER_FACE;
-  const canvas_per_frame_unit = model_hands.face_anchor.height / face.height;
-  return frame_points.map(([frame_x, frame_y]) => {
-    // Shrink or grow around the pivot, so the hand stays where the user's hand is.
-    const scaled_x = scale_pivot[0] + (frame_x - scale_pivot[0]) * model_hands.hand_scale;
-    const scaled_y = scale_pivot[1] + (frame_y - scale_pivot[1]) * model_hands.hand_scale;
-    return [
-      model_face_center[0] + (scaled_x - face.center[0]) * canvas_per_frame_unit,
-      model_face_center[1] + (scaled_y - face.center[1]) * canvas_per_frame_unit,
-    ];
-  });
+  const face_anchor = model_hands.face_anchor;
+  // The hand keeps its shape (one scale, from face heights); only where it sits is measured in
+  // face widths sideways, so a wide cartoon head still has the hand beside it, not on it.
+  const canvas_per_frame_unit = face_anchor.height / face.height;
+  const horizontal_canvas_per_frame_unit = (face_anchor.width ?? face_anchor.height * REAL_FACE_WIDTH_RATIO) / (face.height * REAL_FACE_WIDTH_RATIO);
+  const pivot_on_canvas: FramePoint = [
+    model_face_center[0] + (scale_pivot[0] - face.center[0]) * horizontal_canvas_per_frame_unit,
+    model_face_center[1] + (scale_pivot[1] - face.center[1]) * canvas_per_frame_unit,
+  ];
+  const hand_size = canvas_per_frame_unit * model_hands.hand_scale;
+  return frame_points.map(([frame_x, frame_y]) => [
+    pivot_on_canvas[0] + (frame_x - scale_pivot[0]) * hand_size,
+    pivot_on_canvas[1] + (frame_y - scale_pivot[1]) * hand_size,
+  ]);
 }
 
 /**

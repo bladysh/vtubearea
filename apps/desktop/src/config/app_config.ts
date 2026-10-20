@@ -14,6 +14,7 @@ const app_config_schema = z.object({
   VITE_TRACKING_WASM_PATH: z.string().default("/mediapipe/wasm"),
   VITE_TRACKING_USE_GPU: boolean_from_env.default(true),
   VITE_CALIBRATION_DURATION_MS: positive_integer_from_env.default(2000),
+  VITE_EXPRESSION_CALIBRATION_DURATION_MS: positive_integer_from_env.default(8000),
   VITE_FACE_LOST_TIMEOUT_MS: positive_integer_from_env.default(800),
   VITE_FACE_DETECTION_CONFIDENCE: unit_interval_from_env.default(0.3),
   VITE_FACE_PRESENCE_CONFIDENCE: unit_interval_from_env.default(0.3),
@@ -62,6 +63,8 @@ export const app_config = {
     wasm_path: parsed_environment.VITE_TRACKING_WASM_PATH,
     use_gpu: parsed_environment.VITE_TRACKING_USE_GPU,
     calibration_duration_ms: parsed_environment.VITE_CALIBRATION_DURATION_MS,
+    /** Time to pull faces for the expression calibration (blink, brows, mouth). */
+    expression_calibration_duration_ms: parsed_environment.VITE_EXPRESSION_CALIBRATION_DURATION_MS,
     face_lost_timeout_ms: parsed_environment.VITE_FACE_LOST_TIMEOUT_MS,
     face_confidence: {
       detection: parsed_environment.VITE_FACE_DETECTION_CONFIDENCE,

@@ -1,4 +1,5 @@
 import { FaceLandmarker, FilesetResolver, type FaceLandmarkerResult, type NormalizedLandmark } from "@mediapipe/tasks-vision";
+import { eye_blink_from_mesh } from "../domain/eye_openness";
 import {
   create_empty_face_frame,
   is_arkit_blendshape_name,
@@ -75,7 +76,7 @@ export class MediapipeFaceTracker {
   track(camera_image: CameraImage, timestamp_ms: number): FaceTrackingResult {
     const landmarker_result = this.face_landmarker.detectForVideo(camera_image, timestamp_ms);
     return {
-      face_frame: to_face_frame(landmarker_result, timestamp_ms),
+      face_frame: to_face_frame(landmarker_result, timestamp_ms, camera_image_size(camera_image)),
       landmarks: landmarker_result.faceLandmarks[0] ?? null,
     };
   }
@@ -85,7 +86,13 @@ export class MediapipeFaceTracker {
   }
 }
 
-function to_face_frame(landmarker_result: FaceLandmarkerResult, timestamp_ms: number): FaceFrame {
+/**
+ * Share of the blink taken from the lid gap; the rest is MediaPipe's own blink value. Kept high:
+ * MediaPipe reports a shut eye while the lids are still well apart, so the eye closed too early.
+ */
+const LID_GAP_BLINK_SHARE = 0.8;
+
+function to_face_frame(landmarker_result: FaceLandmarkerResult, timestamp_ms: number, image_size: { width: number; height: number }): FaceFrame {
   const face_frame = create_empty_face_frame("desktop-webcam", timestamp_ms);
   const blendshape_categories = landmarker_result.faceBlendshapes[0]?.categories;
   const transformation_matrix = landmarker_result.facialTransformationMatrixes[0]?.data;
@@ -94,6 +101,12 @@ function to_face_frame(landmarker_result: FaceLandmarkerResult, timestamp_ms: nu
   const blendshapes: FaceBlendshapes = {};
   for (const category of blendshape_categories) {
     if (is_arkit_blendshape_name(category.categoryName)) blendshapes[category.categoryName] = category.score;
+  }
+  // MediaPipe's blink score jumps between open and shut; the lid gap follows a squint smoothly.
+  const lid_gap_blink = eye_blink_from_mesh(landmarker_result.faceLandmarks[0] ?? [], image_size.width / Math.max(image_size.height, 1));
+  if (lid_gap_blink) {
+    blendshapes.eyeBlinkLeft = (blendshapes.eyeBlinkLeft ?? 0) * (1 - LID_GAP_BLINK_SHARE) + lid_gap_blink.left * LID_GAP_BLINK_SHARE;
+    blendshapes.eyeBlinkRight = (blendshapes.eyeBlinkRight ?? 0) * (1 - LID_GAP_BLINK_SHARE) + lid_gap_blink.right * LID_GAP_BLINK_SHARE;
   }
   return {
     ...face_frame,

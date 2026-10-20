@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { tracking_hub, webcam_tracking_session } from "../../../app/app_runtime";
 import { app_config } from "../../../config/app_config";
+import type { ExpressionRanges } from "../domain/expression_calibration";
 import type { NeutralFace } from "../domain/face_calibration";
 import { DEFAULT_TRACKING_SETTINGS, type SensitivityByGroup, type TrackingSettings } from "../domain/tracking_settings";
 import { list_camera_devices, type CameraDevice, type CameraInfo } from "../infrastructure/webcam_camera";
@@ -18,6 +19,9 @@ interface TrackingState {
   /** Known after the camera starts: its limits and the mode it actually delivers. */
   camera_info: CameraInfo | null;
   calibration_status: CalibrationStatus;
+  /** How far this user moves brows and mouth; null until "Calibrate expressions". */
+  expression_ranges: ExpressionRanges | null;
+  expression_calibration_status: CalibrationStatus;
   update_settings: (settings_patch: Partial<TrackingSettings>) => Promise<void>;
   set_sensitivity: (group: keyof SensitivityByGroup, value: number) => void;
   refresh_camera_devices: () => Promise<void>;
@@ -25,6 +29,8 @@ interface TrackingState {
   stop_tracking: () => void;
   calibrate: () => Promise<void>;
   reset_calibration: () => void;
+  calibrate_expressions: () => Promise<void>;
+  reset_expression_calibration: () => void;
 }
 
 export const useTrackingStore = create<TrackingState>()(
@@ -37,6 +43,8 @@ export const useTrackingStore = create<TrackingState>()(
       camera_devices: [],
       camera_info: null,
       calibration_status: "idle",
+      expression_ranges: null,
+      expression_calibration_status: "idle",
 
       update_settings: async (settings_patch) => {
         const previous_settings = get().settings;
@@ -106,21 +114,39 @@ export const useTrackingStore = create<TrackingState>()(
         tracking_hub.set_neutral_face(null);
         set({ neutral_face: null, calibration_status: "idle" });
       },
+      calibrate_expressions: async () => {
+        set({ expression_calibration_status: "recording" });
+        const expression_ranges = await tracking_hub.calibrate_expressions(app_config.tracking.expression_calibration_duration_ms);
+        if (expression_ranges) set({ expression_ranges, expression_calibration_status: "done" });
+        else set({ expression_calibration_status: "no_face" });
+      },
+      reset_expression_calibration: () => {
+        tracking_hub.set_expression_ranges(null);
+        set({ expression_ranges: null, expression_calibration_status: "idle" });
+      },
     }),
     {
       name: "vtubearea.tracking",
-      version: 2,
+      version: 4,
       // New settings fields get their defaults when older saved settings load.
       merge: (persisted_state, current_state) => {
         const saved_state = (persisted_state ?? {}) as Partial<TrackingState>;
         return { ...current_state, ...saved_state, settings: { ...DEFAULT_TRACKING_SETTINGS, ...saved_state.settings } };
       },
-      migrate: (persisted_state) => persisted_state as TrackingState,
-      partialize: (state) => ({ settings: state.settings, neutral_face: state.neutral_face }),
+      migrate: (persisted_state, version) => {
+        const saved_state = persisted_state as TrackingState;
+        // Version 2 defaulted hands to "drawn"; "auto" keeps that unless a model has articulated hands.
+        if (version < 3 && saved_state.settings?.hand_style === "drawn") saved_state.settings.hand_style = "auto";
+        // Version 4 tracks each eye on its own by default, so winks and one-eyed blinks show.
+        if (version < 4 && saved_state.settings) saved_state.settings.is_eye_sync_enabled = false;
+        return saved_state;
+      },
+      partialize: (state) => ({ settings: state.settings, neutral_face: state.neutral_face, expression_ranges: state.expression_ranges }),
       onRehydrateStorage: () => (rehydrated_state) => {
         if (!rehydrated_state) return;
         tracking_hub.update_settings(rehydrated_state.settings);
         tracking_hub.set_neutral_face(rehydrated_state.neutral_face);
+        tracking_hub.set_expression_ranges(rehydrated_state.expression_ranges ?? null);
       },
     },
   ),

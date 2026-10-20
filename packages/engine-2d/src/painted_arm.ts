@@ -1,5 +1,6 @@
 import { Container, Graphics, Matrix, Mesh, MeshGeometry, type Texture } from "pixi.js";
-import type { PaintedArms } from "@vtubearea/model-format";
+import type { ArticulatedHand, PaintedArms } from "@vtubearea/model-format";
+import { solve_articulated_hand } from "./articulated_hand";
 import { multiply_matrices, IDENTITY_MATRIX, type AffineMatrix } from "./affine_matrix";
 import { draw_hand, type CanvasPoint, type HandStyle, type RenderedHand } from "./hand_drawing";
 import { create_grid_geometry, type GridRect } from "./mesh_grid";
@@ -76,12 +77,27 @@ function palm_axis(frame: HandFrame): CanvasPoint {
   ];
 }
 
+/** Which side of the palm axis the thumb is on; differs between the palm and the back of a hand. */
+export function thumb_side_of(frame: HandFrame): boolean {
+  return thumb_side(frame, palm_axis(frame));
+}
+
 function thumb_side(frame: HandFrame, axis: CanvasPoint): boolean {
   const across: CanvasPoint = [frame.index_base[0] - frame.pinky_base[0], frame.index_base[1] - frame.pinky_base[1]];
   return axis[0] * across[1] - axis[1] * across[0] > 0;
 }
 
-/** Meshes of one painted arm: upper arm, every hand pose (one shown at a time), forearm over the wrist. */
+/** Meshes of one articulated hand view: the palm and its 15 finger pieces. */
+interface ArticulatedHandMeshes {
+  art: ArticulatedHand;
+  palm: Mesh;
+  fingers: Mesh[][];
+}
+
+/**
+ * Meshes of one painted arm, back to front: upper arm, hand pose images, wrists and palms that
+ * tuck under the cuff, the forearm, then drawn and articulated fingers that move over the sleeve.
+ */
 export class PaintedArmView {
   readonly container = new Container();
   private readonly upper_arm_mesh: Mesh;
@@ -90,6 +106,8 @@ export class PaintedArmView {
   /** A hand drawn from tracked points: its wrist goes under the sleeve, the palm and fingers over it. */
   private readonly drawn_wrist = new Graphics();
   private readonly drawn_hand = new Graphics();
+  /** Palm-facing and back-of-hand views of the articulated hand, when the model has one. */
+  private readonly articulated_views: ArticulatedHandMeshes[] = [];
 
   constructor(
     private readonly arm_art: PaintedArms,
@@ -99,18 +117,40 @@ export class PaintedArmView {
     /** Colors for a hand drawn from tracked points (pose_id null). */
     private readonly hand_style: HandStyle,
   ) {
+    // Nothing shows until the first update has placed every piece.
+    this.container.visible = false;
     this.upper_arm_mesh = create_part_mesh(arm_art.upper_arm.rect, texture_by_path.get(arm_art.upper_arm.texture)!);
     this.container.addChild(this.upper_arm_mesh);
     for (const hand_pose of arm_art.hand_poses) {
       const hand_mesh = create_part_mesh(hand_pose.rect, texture_by_path.get(hand_pose.texture)!);
+      // Hands start hidden: until the first update they would sit where the art lies on the canvas.
+      hand_mesh.visible = false;
       this.hand_meshes.set(hand_pose.id, hand_mesh);
       this.container.addChild(hand_mesh);
     }
     this.container.addChild(this.drawn_wrist);
+    const articulated_hands = arm_art.articulated_hands;
+    for (const articulated_hand of articulated_hands ? [articulated_hands.palm_side, articulated_hands.back_side] : []) {
+      if (!articulated_hand) continue;
+      const palm = create_part_mesh(articulated_hand.palm.rect, texture_by_path.get(articulated_hand.palm.texture)!);
+      palm.visible = false;
+      this.container.addChild(palm);
+      const fingers = articulated_hand.fingers.map((finger_bones) =>
+        finger_bones.map((finger_bone) => {
+          const finger_mesh = create_part_mesh(finger_bone.rect, texture_by_path.get(finger_bone.texture)!);
+          finger_mesh.visible = false;
+          return finger_mesh;
+        }),
+      );
+      this.articulated_views.push({ art: articulated_hand, palm, fingers });
+    }
     // The sleeve cuff covers the wrist end of every hand image.
     this.forearm_mesh = create_part_mesh(arm_art.forearm.rect, texture_by_path.get(arm_art.forearm.texture)!);
     this.container.addChild(this.forearm_mesh);
     this.container.addChild(this.drawn_hand);
+    for (const articulated_view of this.articulated_views) {
+      for (const finger_meshes of articulated_view.fingers) for (const finger_mesh of finger_meshes) this.container.addChild(finger_mesh);
+    }
   }
 
   update(rendered_hand: RenderedHand): void {
@@ -124,7 +164,8 @@ export class PaintedArmView {
     const { upper_arm, forearm } = this.arm_art;
     set_matrix(this.upper_arm_mesh, multiply_matrices(bone_matrix(to_side(upper_arm.start), to_side(upper_arm.end), arm.shoulder, arm.elbow), side_matrix));
     set_matrix(this.forearm_mesh, multiply_matrices(bone_matrix(to_side(forearm.start), to_side(forearm.end), arm.elbow, arm.wrist), side_matrix));
-    if (painted_hand.pose_id === null) {
+    const hand_choice = painted_hand.hand;
+    if (hand_choice.kind === "drawn") {
       const drawn = { points: rendered_hand.points, opacity: 1, arm };
       draw_hand(this.drawn_wrist, drawn, this.hand_style, "wrist");
       draw_hand(this.drawn_hand, drawn, this.hand_style, "palm_and_fingers");
@@ -134,10 +175,36 @@ export class PaintedArmView {
     }
     for (const hand_pose of this.arm_art.hand_poses) {
       const hand_mesh = this.hand_meshes.get(hand_pose.id)!;
-      hand_mesh.visible = hand_pose.id === painted_hand.pose_id;
+      hand_mesh.visible = hand_choice.kind === "sprite" && hand_pose.id === hand_choice.pose_id;
       if (!hand_mesh.visible) continue;
       const rest_frame: HandFrame = { wrist: to_side(hand_pose.wrist), index_base: to_side(hand_pose.index_base), pinky_base: to_side(hand_pose.pinky_base) };
       set_matrix(hand_mesh, multiply_matrices(hand_pose_matrix(rest_frame, painted_hand), side_matrix));
+    }
+    this.update_articulated_hand(hand_choice.kind === "articulated" ? rendered_hand.points : null, to_side, side_matrix);
+  }
+
+  /** Shows the view whose side (palm or back) matches the tracked hand, or hides both. */
+  private update_articulated_hand(points: readonly CanvasPoint[] | null, to_side: (point: CanvasPoint) => CanvasPoint, side_matrix: AffineMatrix): void {
+    const tracked_frame: HandFrame | null = points && points.length >= 21 ? { wrist: points[0]!, index_base: points[5]!, pinky_base: points[17]! } : null;
+    const shown_view =
+      tracked_frame &&
+      (this.articulated_views.find((articulated_view) => {
+        const palm = articulated_view.art.palm;
+        const rest_frame: HandFrame = { wrist: to_side(palm.wrist), index_base: to_side(palm.index_base), pinky_base: to_side(palm.pinky_base) };
+        return thumb_side_of(rest_frame) === thumb_side_of(tracked_frame);
+      }) ??
+        // Only one view painted: it is mirrored for the other side of the hand.
+        this.articulated_views[0]);
+    for (const articulated_view of this.articulated_views) {
+      const is_shown = articulated_view === shown_view;
+      articulated_view.palm.visible = is_shown;
+      for (const finger_meshes of articulated_view.fingers) for (const finger_mesh of finger_meshes) finger_mesh.visible = is_shown;
+      if (!is_shown || !points) continue;
+      const articulated_pose = solve_articulated_hand(articulated_view.art, points, to_side, side_matrix);
+      set_matrix(articulated_view.palm, articulated_pose.palm);
+      articulated_view.fingers.forEach((finger_meshes, finger_index) =>
+        finger_meshes.forEach((finger_mesh, segment_index) => set_matrix(finger_mesh, articulated_pose.fingers[finger_index]![segment_index]!)),
+      );
     }
   }
 }

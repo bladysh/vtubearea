@@ -68,6 +68,26 @@
           },
           "default_value": {
             "type": "number"
+          },
+          "snap": {
+            "type": "object",
+            "properties": {
+              "values": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "hysteresis": {
+                "default": 0.05,
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "values"
+            ]
           }
         },
         "required": [
@@ -482,6 +502,10 @@
               "type": "number",
               "exclusiveMinimum": 0
             },
+            "width": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
             "group_id": {
               "type": "string",
               "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
@@ -809,6 +833,359 @@
                 "rest_hand_pose_id": {
                   "type": "string",
                   "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+                },
+                "max_stretch": {
+                  "default": 1,
+                  "type": "number",
+                  "minimum": 1
+                },
+                "articulated_hands": {
+                  "type": "object",
+                  "properties": {
+                    "palm_side": {
+                      "type": "object",
+                      "properties": {
+                        "palm": {
+                          "type": "object",
+                          "properties": {
+                            "texture": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "rect": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                },
+                                "width": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                },
+                                "height": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                }
+                              },
+                              "required": [
+                                "x",
+                                "y",
+                                "width",
+                                "height"
+                              ]
+                            },
+                            "wrist": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "items": false,
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "index_base": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "items": false,
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "pinky_base": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "items": false,
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "required": [
+                            "texture",
+                            "rect",
+                            "wrist",
+                            "index_base",
+                            "pinky_base"
+                          ]
+                        },
+                        "fingers": {
+                          "minItems": 5,
+                          "maxItems": 5,
+                          "type": "array",
+                          "items": {
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "texture": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "rect": {
+                                  "type": "object",
+                                  "properties": {
+                                    "x": {
+                                      "type": "number"
+                                    },
+                                    "y": {
+                                      "type": "number"
+                                    },
+                                    "width": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    },
+                                    "height": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    }
+                                  },
+                                  "required": [
+                                    "x",
+                                    "y",
+                                    "width",
+                                    "height"
+                                  ]
+                                },
+                                "start": {
+                                  "type": "array",
+                                  "prefixItems": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "items": false,
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "end": {
+                                  "type": "array",
+                                  "prefixItems": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "items": false,
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              },
+                              "required": [
+                                "texture",
+                                "rect",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "palm",
+                        "fingers"
+                      ]
+                    },
+                    "back_side": {
+                      "type": "object",
+                      "properties": {
+                        "palm": {
+                          "type": "object",
+                          "properties": {
+                            "texture": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "rect": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                },
+                                "width": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                },
+                                "height": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                }
+                              },
+                              "required": [
+                                "x",
+                                "y",
+                                "width",
+                                "height"
+                              ]
+                            },
+                            "wrist": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "items": false,
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "index_base": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "items": false,
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "pinky_base": {
+                              "type": "array",
+                              "prefixItems": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "items": false,
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "required": [
+                            "texture",
+                            "rect",
+                            "wrist",
+                            "index_base",
+                            "pinky_base"
+                          ]
+                        },
+                        "fingers": {
+                          "minItems": 5,
+                          "maxItems": 5,
+                          "type": "array",
+                          "items": {
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "texture": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "rect": {
+                                  "type": "object",
+                                  "properties": {
+                                    "x": {
+                                      "type": "number"
+                                    },
+                                    "y": {
+                                      "type": "number"
+                                    },
+                                    "width": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    },
+                                    "height": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    }
+                                  },
+                                  "required": [
+                                    "x",
+                                    "y",
+                                    "width",
+                                    "height"
+                                  ]
+                                },
+                                "start": {
+                                  "type": "array",
+                                  "prefixItems": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "items": false,
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "end": {
+                                  "type": "array",
+                                  "prefixItems": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "items": false,
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              },
+                              "required": [
+                                "texture",
+                                "rect",
+                                "start",
+                                "end"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "palm",
+                        "fingers"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "palm_side"
+                  ]
                 }
               },
               "required": [

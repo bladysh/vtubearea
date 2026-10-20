@@ -119,6 +119,7 @@ describe("AvatarFrameComposer", () => {
         forearm: { ...part, start: [380, 400] as [number, number], end: [370, 500] as [number, number] },
         hand_poses: [{ ...part, id: "rest", wrist: [370, 500] as [number, number], index_base: [365, 540] as [number, number], pinky_base: [380, 540] as [number, number] }],
         rest_hand_pose_id: "rest",
+        max_stretch: 1,
       },
     };
     const frame_composer = new AvatarFrameComposer({ auto_blink_min_interval_ms: 1, auto_blink_max_interval_ms: 1, breathing_period_ms: 1 });
@@ -127,7 +128,7 @@ describe("AvatarFrameComposer", () => {
     const rendered_hands = frame_composer.compose_hands([null, null], null, keep_point, 1 / 60);
     const left_arm = rendered_hands.find((rendered_hand) => rendered_hand.painted_hand?.is_mirrored)!;
     expect(left_arm.opacity).toBe(1);
-    expect(left_arm.painted_hand).toMatchObject({ pose_id: "rest", wrist: [630, 500] });
+    expect(left_arm.painted_hand).toMatchObject({ hand: { kind: "sprite", pose_id: "rest" }, wrist: [630, 500] });
     expect(left_arm.arm?.elbow[0]).toBeCloseTo(620, 0);
   });
 

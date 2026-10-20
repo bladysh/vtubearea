@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Camera, CameraOff, Hand, ScanFace, SlidersHorizontal, Wind } from "lucide-react";
+import { Camera, CameraOff, Hand, ScanFace, SlidersHorizontal, Smile, Wind } from "lucide-react";
 import { Badge, Button, IconButton, Panel, TabBar, useTranslate } from "@vtubearea/ui";
 import { tracking_hub } from "../../../app/app_runtime";
 import { usePolledValue } from "../../../shared/use_polled_value";
@@ -10,18 +10,19 @@ import { FaceTab } from "./face_tab";
 import { HandsTab } from "./hands_tab";
 import "./tracking.css";
 
-const TRACKING_TABS = ["camera", "face", "hands", "motion", "mapping"] as const;
+const TRACKING_TABS = ["camera", "face", "hands", "gestures", "motion", "mapping"] as const;
 type TrackingTab = (typeof TRACKING_TABS)[number];
 
 const read_face_found = () => tracking_hub.snapshot().is_face_found;
 
 interface TrackingPanelProps {
   /** Tabs owned by the avatar context, passed in by the app shell. */
+  gestures_tab: ReactNode;
   motion_tab: ReactNode;
   mapping_tab: ReactNode;
 }
 
-export function TrackingPanel({ motion_tab, mapping_tab }: TrackingPanelProps) {
+export function TrackingPanel({ gestures_tab, motion_tab, mapping_tab }: TrackingPanelProps) {
   const translate = useTranslate();
   const [active_tab, set_active_tab] = useActiveTab<TrackingTab>("tracking", TRACKING_TABS);
   const session_status = useTrackingStore((state) => state.session_status);
@@ -34,6 +35,7 @@ export function TrackingPanel({ motion_tab, mapping_tab }: TrackingPanelProps) {
     { value: "camera" as const, label: translate("tracking.tab.camera"), icon: <Camera size={14} /> },
     { value: "face" as const, label: translate("tracking.tab.face"), icon: <ScanFace size={14} /> },
     { value: "hands" as const, label: translate("tracking.tab.hands"), icon: <Hand size={14} /> },
+    { value: "gestures" as const, label: translate("tracking.tab.gestures"), icon: <Smile size={14} /> },
     { value: "motion" as const, label: translate("tracking.tab.motion"), icon: <Wind size={14} /> },
     { value: "mapping" as const, label: translate("tracking.tab.mapping"), icon: <SlidersHorizontal size={14} /> },
   ];
@@ -61,6 +63,7 @@ export function TrackingPanel({ motion_tab, mapping_tab }: TrackingPanelProps) {
       {active_tab === "camera" && <CameraTab />}
       {active_tab === "face" && <FaceTab />}
       {active_tab === "hands" && <HandsTab />}
+      {active_tab === "gestures" && gestures_tab}
       {active_tab === "motion" && motion_tab}
       {active_tab === "mapping" && mapping_tab}
     </Panel>
