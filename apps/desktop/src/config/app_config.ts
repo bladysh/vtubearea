@@ -24,6 +24,7 @@ const app_config_schema = z.object({
   VITE_HAND_PRESENCE_CONFIDENCE: unit_interval_from_env.default(0.3),
   VITE_HAND_TRACKING_CONFIDENCE: unit_interval_from_env.default(0.3),
   VITE_HAND_LOST_TIMEOUT_MS: positive_integer_from_env.default(450),
+  VITE_HAND_FRAME_INTERVAL: positive_integer_from_env.default(2),
   VITE_AUTO_BLINK_MIN_INTERVAL_MS: positive_integer_from_env.default(2500),
   VITE_AUTO_BLINK_MAX_INTERVAL_MS: positive_integer_from_env.default(6000),
   VITE_BREATHING_PERIOD_MS: positive_integer_from_env.default(3500),
@@ -78,6 +79,8 @@ export const app_config = {
       tracking: parsed_environment.VITE_HAND_TRACKING_CONFIDENCE,
     },
     hand_lost_timeout_ms: parsed_environment.VITE_HAND_LOST_TIMEOUT_MS,
+    /** Hands run on every n-th camera frame: 2 halves their cost at 15 hand updates per second. */
+    hand_frame_interval: parsed_environment.VITE_HAND_FRAME_INTERVAL,
   },
   idle_motion: {
     auto_blink_min_interval_ms: parsed_environment.VITE_AUTO_BLINK_MIN_INTERVAL_MS,

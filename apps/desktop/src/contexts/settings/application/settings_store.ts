@@ -22,6 +22,7 @@ interface SettingsState extends AppSettings {
 const default_settings: AppSettings = {
   locale: app_config.interface.default_locale,
   max_frames_per_second: app_config.render.max_frames_per_second,
+  render_resolution: null,
   is_debug_overlay_visible: app_config.interface.debug_mode_default,
   is_auto_blink_enabled: true,
   is_breathing_enabled: true,

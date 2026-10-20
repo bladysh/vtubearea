@@ -5,6 +5,9 @@ import { CameraPreview } from "./camera_preview";
 import { HandCharts } from "./tracking_charts";
 
 /** Switches with the live preview under them, then sliders, and charts at the bottom. */
+/** Run hands on every frame, every second or every third camera frame. */
+const HAND_FRAME_INTERVALS = [1, 2, 3] as const;
+
 export function HandsTab() {
   const translate = useTranslate();
   const settings = useTrackingStore((state) => state.settings);
@@ -67,6 +70,22 @@ export function HandsTab() {
 
       {is_enabled && (
         <Section title={translate("tracking.response")}>
+          <Field
+            label={translate("tracking.hand_frame_interval")}
+            hint={translate("tracking.hand_frame_interval_hint")}
+            is_stacked
+            control={
+              <SegmentedControl<string>
+                label={translate("tracking.hand_frame_interval")}
+                value={String(settings.hand_frame_interval)}
+                options={HAND_FRAME_INTERVALS.map((frame_interval) => ({
+                  value: String(frame_interval),
+                  label: translate(`tracking.hand_frame_interval.${frame_interval}`),
+                }))}
+                on_change={(frame_interval) => void update_settings({ hand_frame_interval: Number(frame_interval) })}
+              />
+            }
+          />
           <SliderField
             label={translate("tracking.hand_smoothness")}
             hint={translate("tracking.hand_smoothness_hint")}

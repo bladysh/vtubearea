@@ -285,5 +285,18 @@
   "tracking.eye_closing_lateness_hint": "Move right if the avatar shuts its eyes while yours are still a little open; left if it barely closes them.",
   "tracking.eye_closing.later": "later +{amount}",
   "tracking.eye_closing.earlier": "earlier −{amount}",
-  "tracking.eye_closing.as_is": "as tracked"
+  "tracking.eye_closing.as_is": "as tracked",
+  "tracking.inference_device": "Recognition runs on",
+  "tracking.inference_device_hint": "GPU is fastest alone. OBS and the avatar use the GPU too; if it stutters while streaming, try CPU or the mixed mode.",
+  "tracking.inference_device.gpu": "GPU",
+  "tracking.inference_device.cpu": "CPU",
+  "tracking.inference_device.face_gpu_hands_cpu": "Face on GPU, hands on CPU",
+  "tracking.hand_frame_interval": "Hand updates",
+  "tracking.hand_frame_interval_hint": "Hands cost several times more than the face. Every second frame halves that and is still smooth.",
+  "tracking.hand_frame_interval.1": "Every frame",
+  "tracking.hand_frame_interval.2": "Every 2nd",
+  "tracking.hand_frame_interval.3": "Every 3rd",
+  "settings.render_resolution": "Avatar sharpness",
+  "settings.render_resolution_hint": "Pixels per screen point. 1× draws a quarter of Retina's pixels: much less GPU work, slightly softer edges.",
+  "settings.render_resolution.screen": "As the screen ({scale}×)"
 }

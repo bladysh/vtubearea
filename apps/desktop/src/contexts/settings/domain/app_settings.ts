@@ -8,6 +8,8 @@ export const HOTKEY_ACTIONS: readonly HotkeyAction[] = ["toggle_interface", "tog
 export interface AppSettings {
   locale: Locale;
   max_frames_per_second: number;
+  /** Avatar canvas pixels per screen point; null = the screen's own (2 on Retina). */
+  render_resolution: number | null;
   is_debug_overlay_visible: boolean;
   is_auto_blink_enabled: boolean;
   is_breathing_enabled: boolean;

@@ -11,6 +11,12 @@ export type CameraPreviewMode = "video" | "tracking_only" | "hidden";
  */
 export type HandStyle = "auto" | "model_art" | "drawn";
 
+/**
+ * Where MediaPipe runs. The GPU is faster alone, but OBS and the avatar share it; the CPU
+ * leaves it free. Mixed keeps the face on the GPU and moves the heavier hands to the CPU.
+ */
+export type InferenceDevice = "gpu" | "cpu" | "face_gpu_hands_cpu";
+
 /** Requested camera mode; the camera may deliver the closest mode it supports. */
 export interface CameraMode {
   width: number;
@@ -47,9 +53,15 @@ export interface TrackingSettings {
   hand_style: HandStyle;
   /** Scales how far the model lets its arms stretch past their drawn length: 0 = never, 1 = as the model says, 2 = twice that. */
   arm_stretch_factor: number;
+  inference_device: InferenceDevice;
+  /** Hands run on every n-th camera frame (1 = every frame); between runs the last hands are kept. */
+  hand_frame_interval: number;
 }
 
 export const CAMERA_RESOLUTION_PRESETS: readonly { width: number; height: number }[] = [
+  { width: 320, height: 240 },
+  { width: 424, height: 240 },
+  { width: 640, height: 360 },
   { width: 640, height: 480 },
   { width: 960, height: 540 },
   { width: 1280, height: 720 },
@@ -57,7 +69,7 @@ export const CAMERA_RESOLUTION_PRESETS: readonly { width: number; height: number
   { width: 2560, height: 1440 },
   { width: 3840, height: 2160 },
 ];
-export const CAMERA_FRAME_RATE_PRESETS: readonly number[] = [15, 24, 30, 60];
+export const CAMERA_FRAME_RATE_PRESETS: readonly number[] = [10, 15, 20, 24, 30, 60];
 
 export const DEFAULT_TRACKING_SETTINGS: TrackingSettings = {
   is_enabled: false,
@@ -77,4 +89,6 @@ export const DEFAULT_TRACKING_SETTINGS: TrackingSettings = {
   is_elbow_from_wrist_enabled: true,
   hand_style: "auto",
   arm_stretch_factor: 1,
+  inference_device: "gpu",
+  hand_frame_interval: 2,
 };

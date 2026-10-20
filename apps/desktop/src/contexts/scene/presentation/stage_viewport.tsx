@@ -32,6 +32,7 @@ export function StageViewport() {
   );
   const update_view_transform = useAvatarStore((state) => state.update_view_transform);
   const max_frames_per_second = useSettingsStore((state) => state.max_frames_per_second);
+  const render_resolution = useSettingsStore((state) => state.render_resolution);
   const is_editing_items = useSceneStore((state) => state.is_editing_items);
   const view_transform_ref = useRef<ModelViewTransform>(DEFAULT_VIEW_TRANSFORM);
   const drag_start_ref = useRef<DragStart | null>(null);
@@ -107,6 +108,10 @@ export function StageViewport() {
   useEffect(() => {
     avatar_renderer?.set_max_frames_per_second(max_frames_per_second);
   }, [avatar_renderer, max_frames_per_second]);
+
+  useEffect(() => {
+    avatar_renderer?.set_resolution(render_resolution ?? window.devicePixelRatio);
+  }, [avatar_renderer, render_resolution]);
 
   // While dragging, the renderer moves directly; the store is written once on release.
   const handle_pointer_down = (pointer_event: ReactPointerEvent<HTMLDivElement>) => {

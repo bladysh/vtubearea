@@ -22,7 +22,6 @@ export const webcam_tracking_session = new WebcamTrackingSession(tracking_hub, {
   wasm_url: absolute_url(app_config.tracking.wasm_path),
   face_model_url: absolute_url(app_config.tracking.model_path),
   hand_model_url: absolute_url(app_config.tracking.hand_model_path),
-  use_gpu: app_config.tracking.use_gpu,
   face_confidence: app_config.tracking.face_confidence,
   hand_confidence: app_config.tracking.hand_confidence,
 });

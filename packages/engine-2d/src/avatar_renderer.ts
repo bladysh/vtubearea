@@ -79,6 +79,13 @@ export class AvatarRenderer {
     this.application.ticker.maxFPS = value;
   }
 
+  /** Pixels per screen point: lower is softer but far less work for the GPU (1 = a quarter of Retina's 2). */
+  set_resolution(resolution: number): void {
+    if (this.application.renderer.resolution === resolution) return;
+    this.application.renderer.resize(this.application.screen.width, this.application.screen.height, resolution);
+    this.apply_view_transform();
+  }
+
   /** Runs before every rendered frame; return value of the callback is ignored. */
   on_before_render(callback: (delta_seconds: number) => void): () => void {
     const ticker_callback = () => callback(this.application.ticker.deltaMS / 1000);

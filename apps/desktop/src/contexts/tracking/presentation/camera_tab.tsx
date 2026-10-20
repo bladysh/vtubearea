@@ -2,7 +2,7 @@ import { CameraOff } from "lucide-react";
 import { Field, SegmentedControl, Section, SelectField, ToggleField, useTranslate } from "@vtubearea/ui";
 import { app_config } from "../../../config/app_config";
 import { useTrackingStore } from "../application/tracking_store";
-import { CAMERA_FRAME_RATE_PRESETS, CAMERA_RESOLUTION_PRESETS, type CameraPreviewMode } from "../domain/tracking_settings";
+import { CAMERA_FRAME_RATE_PRESETS, CAMERA_RESOLUTION_PRESETS, type CameraPreviewMode, type InferenceDevice } from "../domain/tracking_settings";
 import { CameraPreview } from "./camera_preview";
 
 const to_resolution_value = (width: number, height: number) => `${width}x${height}`;
@@ -47,6 +47,11 @@ export function CameraTab() {
   if (maximum_frame_rate && !frame_rate_options.some((option) => option.value === String(maximum_frame_rate))) {
     frame_rate_options.push({ value: String(maximum_frame_rate), label: translate("tracking.frame_rate_maximum", { frame_rate: maximum_frame_rate }) });
   }
+  const inference_device_options: { value: InferenceDevice; label: string }[] = [
+    { value: "gpu", label: translate("tracking.inference_device.gpu") },
+    { value: "cpu", label: translate("tracking.inference_device.cpu") },
+    { value: "face_gpu_hands_cpu", label: translate("tracking.inference_device.face_gpu_hands_cpu") },
+  ];
   const camera_options = [
     { value: "", label: translate("tracking.default_camera") },
     ...camera_devices.map((camera_device) => ({ value: camera_device.device_id, label: camera_device.label })),
@@ -117,6 +122,13 @@ export function CameraTab() {
           value={String(camera_mode.frame_rate)}
           options={frame_rate_options}
           on_change={(frame_rate) => void update_settings({ camera_mode: { ...camera_mode, frame_rate: Number(frame_rate) } })}
+        />
+        <SelectField
+          label={translate("tracking.inference_device")}
+          hint={translate("tracking.inference_device_hint")}
+          value={settings.inference_device}
+          options={inference_device_options}
+          on_change={(inference_device) => void update_settings({ inference_device })}
         />
         {camera_info?.maximum_width && (
           <Field

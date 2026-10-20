@@ -7,6 +7,13 @@ import type { NeutralFace } from "../domain/face_calibration";
 import { DEFAULT_TRACKING_SETTINGS, type SensitivityByGroup, type TrackingSettings } from "../domain/tracking_settings";
 import { list_camera_devices, type CameraDevice, type CameraInfo } from "../infrastructure/webcam_camera";
 
+// The .env values are the defaults; the user's choice in the settings wins.
+const DEFAULT_SETTINGS: TrackingSettings = {
+  ...DEFAULT_TRACKING_SETTINGS,
+  inference_device: app_config.tracking.use_gpu ? "gpu" : "cpu",
+  hand_frame_interval: app_config.tracking.hand_frame_interval,
+};
+
 export type TrackingSessionStatus = "stopped" | "starting" | "running" | "error";
 export type CalibrationStatus = "idle" | "recording" | "done" | "no_face";
 
@@ -36,7 +43,7 @@ interface TrackingState {
 export const useTrackingStore = create<TrackingState>()(
   persist(
     (set, get) => ({
-      settings: DEFAULT_TRACKING_SETTINGS,
+      settings: DEFAULT_SETTINGS,
       neutral_face: null,
       session_status: "stopped",
       error_message: null,
@@ -51,6 +58,8 @@ export const useTrackingStore = create<TrackingState>()(
         const next_settings = { ...previous_settings, ...settings_patch };
         set({ settings: next_settings });
         tracking_hub.update_settings(next_settings);
+        webcam_tracking_session.set_hand_frame_interval(next_settings.hand_frame_interval);
+        webcam_tracking_session.set_inference_device(next_settings.inference_device);
         if (next_settings.is_hand_tracking_enabled !== previous_settings.is_hand_tracking_enabled) {
           try {
             await webcam_tracking_session.set_hand_tracking_enabled(next_settings.is_hand_tracking_enabled);
@@ -61,7 +70,8 @@ export const useTrackingStore = create<TrackingState>()(
         }
         const is_camera_changed =
           next_settings.camera_device_id !== previous_settings.camera_device_id ||
-          JSON.stringify(next_settings.camera_mode) !== JSON.stringify(previous_settings.camera_mode);
+          JSON.stringify(next_settings.camera_mode) !== JSON.stringify(previous_settings.camera_mode) ||
+          next_settings.inference_device !== previous_settings.inference_device;
         if (is_camera_changed && webcam_tracking_session.is_running) await get().start_tracking();
       },
 
@@ -77,6 +87,8 @@ export const useTrackingStore = create<TrackingState>()(
       start_tracking: async () => {
         set({ session_status: "starting", error_message: null });
         try {
+          webcam_tracking_session.set_inference_device(get().settings.inference_device);
+          webcam_tracking_session.set_hand_frame_interval(get().settings.hand_frame_interval);
           await webcam_tracking_session.set_hand_tracking_enabled(get().settings.is_hand_tracking_enabled);
           const camera_mode = get().settings.camera_mode ?? app_config.camera;
           await webcam_tracking_session.start({
@@ -131,7 +143,7 @@ export const useTrackingStore = create<TrackingState>()(
       // New settings fields get their defaults when older saved settings load.
       merge: (persisted_state, current_state) => {
         const saved_state = (persisted_state ?? {}) as Partial<TrackingState>;
-        return { ...current_state, ...saved_state, settings: { ...DEFAULT_TRACKING_SETTINGS, ...saved_state.settings } };
+        return { ...current_state, ...saved_state, settings: { ...DEFAULT_SETTINGS, ...saved_state.settings } };
       },
       migrate: (persisted_state, version) => {
         const saved_state = persisted_state as TrackingState;

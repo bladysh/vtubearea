@@ -285,5 +285,18 @@
   "tracking.eye_closing_lateness_hint": "Правее — если модель закрывает глаза, когда ваши ещё приоткрыты; левее — если она их почти не закрывает.",
   "tracking.eye_closing.later": "позже +{amount}",
   "tracking.eye_closing.earlier": "раньше −{amount}",
-  "tracking.eye_closing.as_is": "как есть"
+  "tracking.eye_closing.as_is": "как есть",
+  "tracking.inference_device": "Распознавание на",
+  "tracking.inference_device_hint": "Видеокарта быстрее всего, когда она свободна. Её же используют OBS и аватар: если во время стрима подлагивает, попробуйте процессор или смешанный режим.",
+  "tracking.inference_device.gpu": "Видеокарта",
+  "tracking.inference_device.cpu": "Процессор",
+  "tracking.inference_device.face_gpu_hands_cpu": "Лицо — видеокарта, руки — процессор",
+  "tracking.hand_frame_interval": "Обновление рук",
+  "tracking.hand_frame_interval_hint": "Руки в несколько раз дороже лица. Через кадр — вдвое меньше нагрузки, а движение остаётся плавным.",
+  "tracking.hand_frame_interval.1": "Каждый кадр",
+  "tracking.hand_frame_interval.2": "Через кадр",
+  "tracking.hand_frame_interval.3": "Каждый 3-й",
+  "settings.render_resolution": "Чёткость аватара",
+  "settings.render_resolution_hint": "Пикселей на точку экрана. 1× рисует вчетверо меньше пикселей, чем Retina: намного меньше нагрузки на видеокарту, края чуть мягче.",
+  "settings.render_resolution.screen": "Как у экрана ({scale}×)"
 }

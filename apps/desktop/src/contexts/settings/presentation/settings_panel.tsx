@@ -38,10 +38,14 @@ export function SettingsPanel() {
   );
 }
 
+/** Avatar sharpness steps; below the screen's own they trade crispness for much less GPU work. */
+const RENDER_RESOLUTIONS = [2, 1.5, 1, 0.75] as const;
+
 function GeneralTab() {
   const translate = useTranslate();
   const locale = useSettingsStore((state) => state.locale);
   const max_frames_per_second = useSettingsStore((state) => state.max_frames_per_second);
+  const render_resolution = useSettingsStore((state) => state.render_resolution);
   const is_debug_overlay_visible = useSettingsStore((state) => state.is_debug_overlay_visible);
   const update_settings = useSettingsStore((state) => state.update_settings);
 
@@ -68,6 +72,16 @@ function GeneralTab() {
         step={1}
         format_value={(value) => `${value} FPS`}
         on_change={(value) => update_settings({ max_frames_per_second: value })}
+      />
+      <SelectField
+        label={translate("settings.render_resolution")}
+        hint={translate("settings.render_resolution_hint")}
+        value={render_resolution === null ? "screen" : String(render_resolution)}
+        options={[
+          { value: "screen", label: translate("settings.render_resolution.screen", { scale: window.devicePixelRatio }) },
+          ...RENDER_RESOLUTIONS.map((resolution) => ({ value: String(resolution), label: `${resolution}×` })),
+        ]}
+        on_change={(value) => update_settings({ render_resolution: value === "screen" ? null : Number(value) })}
       />
     </Section>
   );
